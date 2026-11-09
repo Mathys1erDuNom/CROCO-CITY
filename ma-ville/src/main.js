@@ -6,6 +6,8 @@ import { addVehicle, updateVehicles } from './vehicles.js';
 import { drawRoads } from './roads.js';
 import { COLS, ROWS } from './map.js';
 import { TILE_SIZE } from './config.js';
+import { addPedestrian, updatePedestrians } from './pedestrians.js';
+import { checkCollisions } from './collisions.js';
 
 const { scene, camera, renderer, controls } = createScene();
 
@@ -32,6 +34,11 @@ async function buildCity() {
   // Voitures : elles démarrent sur une case de route (1 dans la carte)
   await addVehicle(scene, 'cars', 'ambulance', 0, 0, 3);
   await addVehicle(scene, 'cars', 'taxi', 4, 3, 2); // un autre modèle, à adapter
+
+  // Quelques piéton sur des cases de route
+  addPedestrian(scene, 3, 3);
+  addPedestrian(scene, 5, 6);
+  addPedestrian(scene, 1, 0);
 }
 buildCity();
 
@@ -43,7 +50,9 @@ function animate() {
   requestAnimationFrame(animate);
 
   const delta = clock.getDelta(); // secondes depuis la dernière image
-  updateVehicles(delta);          // ← fait avancer les véhicules
+  updateVehicles(delta);          // fait avancer les voitures
+  updatePedestrians(delta);       // ← fait marcher les piétons
+  checkCollisions();              // ← détecte les chocs (toujours APRÈS les déplacements)
 
   controls.update();
   renderer.render(scene, camera);

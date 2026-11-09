@@ -19,3 +19,23 @@ export const COLS = MAP[0].length;
 export function isRoad(col, row) {
   return MAP[row]?.[col] === 1;
 }
+
+// Les 4 directions possibles (dc = colonnes, dr = lignes).
+// Déplacées ici pour être partagées entre voitures et piétons.
+export const DIRECTIONS = [
+  { dc: 0, dr: -1 }, // haut
+  { dc: 1, dr: 0 },  // droite
+  { dc: 0, dr: 1 },  // bas
+  { dc: -1, dr: 0 }, // gauche
+];
+
+// Renvoie une case de route au hasard, par exemple { col: 3, row: 0 }
+export function randomRoadCell() {
+  const cells = [];
+  MAP.forEach((line, row) =>
+    line.forEach((cell, col) => {
+      if (cell === 1) cells.push({ col, row });
+    })
+  );
+  return cells[Math.floor(Math.random() * cells.length)];
+}
