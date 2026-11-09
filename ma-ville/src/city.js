@@ -22,4 +22,5 @@ export async function placeModel(scene, pack, name, col, row, options = {}) {
   model.rotation.y = rotation * (Math.PI / 2);
 
   scene.add(model);
+  return model;
 }
