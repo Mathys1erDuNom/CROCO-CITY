@@ -16,12 +16,10 @@ const ground = new THREE.Mesh(
 ground.rotation.x = -Math.PI / 2;
 scene.add(ground);
 
-// --- Les bâtiments ---
 async function buildCity() {
   await placeModel(scene, 'suburban', 'building-type-a', 0, 0);
   await placeModel(scene, 'suburban', 'building-type-b', 1, 0);
-  // plus tard :
-  await placeModel(scene, 'cars', 'ambulance', 3, 1);
+  await placeModel(scene, 'cars', 'ambulance', 0, 1);
 }
 buildCity();
 
