@@ -11,6 +11,7 @@ export const TILE_SIZE = 2;
 export const PACK_SETTINGS = {
   suburban: { scale: 1, y: 0 },
   cars: { scale: 0.5, y: 0.1 },
+  characters: { scale: 1, y: 0 }
 };
 
 // Utilisé si un pack n'est pas listé ci-dessus

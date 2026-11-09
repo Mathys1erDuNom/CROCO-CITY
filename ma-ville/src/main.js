@@ -33,12 +33,17 @@ async function buildCity() {
 
   // Voitures : elles démarrent sur une case de route (1 dans la carte)
   await addVehicle(scene, 'cars', 'ambulance', 0, 0, 3);
-  await addVehicle(scene, 'cars', 'taxi', 4, 3, 2); // un autre modèle, à adapter
+  await addVehicle(scene, 'cars', 'taxi', 4, 3, 2); 
 
   // Quelques piéton sur des cases de route
-  addPedestrian(scene, 3, 3);
-  addPedestrian(scene, 5, 6);
-  addPedestrian(scene, 1, 0);
+    // Personnages : pack, nom du fichier SANS .glb, colonne, ligne
+  await addPedestrian(scene, 'characters', 'character-alien', 3, 3);
+  await addPedestrian(scene, 'characters', 'character-alien', 5, 6);
+  await addPedestrian(scene, 'characters', 'character-alien', 1, 0);
+
+
+  //await addPedestrian(scene, 'characters', 'aid_hearing.glb', 3, 3);
+  
 }
 buildCity();
 
