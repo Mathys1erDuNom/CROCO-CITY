@@ -52,13 +52,13 @@ async function buildCity() {
   //Commercial
 
   // Côté OUEST
-  await addBuilding(scene, 'commercial', 'building-skyscraper-b', 1.5, -0.1, { rotation: 2 }); // rotation 180°  
-  await addBuilding(scene, 'commercial', 'building-skyscraper-a', 3.5, -0.1, { rotation: 2 }); // rotation 180°
-  await addBuilding(scene, 'commercial', 'building-skyscraper-d', 5.5, -0.1, { rotation: 2 }); // rotation 180°
+  await addBuilding(scene, 'commercial', 'building-skyscraper-b', 1.5, -0.2, { rotation: 2 }); // rotation 180°  
+  await addBuilding(scene, 'commercial', 'building-skyscraper-a', 3.5, -0.2, { rotation: 2 }); // rotation 180°
+  await addBuilding(scene, 'commercial', 'building-skyscraper-d', 5.5, -0.2, { rotation: 2 }); // rotation 180°
 
-  await addBuilding(scene, 'commercial', 'building-i', -0.1, 2, { rotation: 3 }); 
-  await addBuilding(scene, 'commercial', 'building-c', -0.1, 4, { rotation: 3 }); 
-  await addBuilding(scene, 'commercial', 'building-skyscraper-e', -0.1, 6, { rotation: 3 }); 
+  await addBuilding(scene, 'commercial', 'building-i', -0.2, 2, { rotation: 3 }); 
+  await addBuilding(scene, 'commercial', 'building-c', -0.2, 4, { rotation: 3 }); 
+  await addBuilding(scene, 'commercial', 'building-skyscraper-e', -0.2, 6, { rotation: 3 }); 
 
 
   // MAISON 
