@@ -18,22 +18,22 @@
     "semantic_hash": "3d95f93865dd3077f0804000e9a57be9"
   },
   "src/collisions.js": {
-    "mtime": 1794308468.3265898,
-    "seen": 1794329456.0512269,
-    "ast_hash": "97f8c33940b62f9130c80693a43b8ce6",
-    "semantic_hash": "97f8c33940b62f9130c80693a43b8ce6"
+    "mtime": 1794336551.7493992,
+    "seen": 1794336573.766463,
+    "ast_hash": "a87895c661f92fd0ce6c6d2d4fe862c0",
+    "semantic_hash": ""
   },
   "src/config.js": {
-    "mtime": 1794331888.9802234,
-    "seen": 1794331894.677047,
-    "ast_hash": "a97821b1465b23dcf2e37ea074d38694",
+    "mtime": 1794337785.0029151,
+    "seen": 1794337788.0929852,
+    "ast_hash": "3738b48770b20655648c6594f23e430a",
     "semantic_hash": ""
   },
   "src/effects.js": {
-    "mtime": 1794307888.1980212,
-    "seen": 1794329456.051232,
-    "ast_hash": "36e9b0edd969dd424d2d87c6e5903e62",
-    "semantic_hash": "36e9b0edd969dd424d2d87c6e5903e62"
+    "mtime": 1794331973.527169,
+    "seen": 1794331978.827683,
+    "ast_hash": "75429047f592f8b90eb2c418b2c1865f",
+    "semantic_hash": ""
   },
   "src/loader.js": {
     "mtime": 1794209942.4783087,
@@ -42,21 +42,21 @@
     "semantic_hash": "78b1994efdcad77b86bc3948dcbc2647"
   },
   "src/main.js": {
-    "mtime": 1794331826.7235928,
-    "seen": 1794331894.677055,
-    "ast_hash": "95aa0e5bf7f4c9e102892e7d286c67c9",
+    "mtime": 1794337594.6499012,
+    "seen": 1794337788.092993,
+    "ast_hash": "96052214dcc8644bbf1acdfe79ad63b2",
     "semantic_hash": ""
   },
   "src/map.js": {
-    "mtime": 1794330976.320142,
-    "seen": 1794331032.3099751,
-    "ast_hash": "bdfe60eaa1e9269f3af011422bb24432",
+    "mtime": 1794334216.2421992,
+    "seen": 1794335231.600183,
+    "ast_hash": "ed35c0d7b360975ad6efe2d3be8e44e0",
     "semantic_hash": ""
   },
   "src/pedestrians.js": {
-    "mtime": 1794331888.9794385,
-    "seen": 1794331894.677061,
-    "ast_hash": "7f9f133b6dd89b059d65fb92642933f2",
+    "mtime": 1794331973.5258434,
+    "seen": 1794331978.8276942,
+    "ast_hash": "5df31a422e2a867614ade1a264918093",
     "semantic_hash": ""
   },
   "src/roads.js": {
@@ -72,9 +72,9 @@
     "semantic_hash": "0651ad70487bb6372ff8223fbab9e55e"
   },
   "src/vehicles.js": {
-    "mtime": 1794331018.5345097,
-    "seen": 1794331032.309987,
-    "ast_hash": "393170c9d1b2b7f1514ce1bf64f82377",
+    "mtime": 1794337774.3043153,
+    "seen": 1794337788.0930078,
+    "ast_hash": "b19906d03e72f3fb14f044db74281585",
     "semantic_hash": ""
   },
   "vite.config.js": {

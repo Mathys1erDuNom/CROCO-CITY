@@ -1,7 +1,7 @@
 import { vehicles, crashCar, bumpCar } from './vehicles.js';
 import { pedestrians, launchPedestrian } from './pedestrians.js';
 import { hitBuildings, bounceOffWall } from './buildings.js';
-import { CAR_WIDTH, CAR_LENGTH, CAR_HEADING_OFFSET, PED_RADIUS, PED_BOUNCE, BRIDGE_HEIGHT, BODY_RADIUS, BUMP_FULL_SPEED, BUMP_PUSH, CRASH_BOUNCE, CRASH_MIN_SPEED, CRASH_SPIN } from './config.js';
+import { CAR_HEADING_OFFSET, PED_RADIUS, PED_BOUNCE, BRIDGE_HEIGHT, BODY_RADIUS, BUMP_FULL_SPEED, BUMP_PUSH, CRASH_BOUNCE, CRASH_MIN_SPEED, CRASH_SPIN } from './config.js';
 
 // Appelée à chaque image, après les déplacements
 export function checkCollisions() {
@@ -22,7 +22,7 @@ export function checkCollisions() {
 
       const pp = ped.model.position;
       const touched = sameLevel(car.model.position, pp) &&
-        carCircles(car).some((c) => Math.hypot(c.x - pp.x, c.z - pp.z) < CAR_WIDTH / 2 + PED_RADIUS);
+        carCircles(car).some((c) => Math.hypot(c.x - pp.x, c.z - pp.z) < car.width / 2 + PED_RADIUS);
 
       if (touched) {
         // Projeté dans la direction où roule la voiture
@@ -41,7 +41,7 @@ export function checkCollisions() {
       if (ped.state !== 'down') continue;
       const pp = ped.model.position;
       const touched = sameLevel(car.model.position, pp) &&
-        carCircles(car).some((c) => Math.hypot(c.x - pp.x, c.z - pp.z) < CAR_WIDTH / 2 + BODY_RADIUS);
+        carCircles(car).some((c) => Math.hypot(c.x - pp.x, c.z - pp.z) < car.width / 2 + BODY_RADIUS);
       if (!touched) continue;
 
       bumpCar(car, Math.min(1, speed / BUMP_FULL_SPEED));
@@ -69,7 +69,7 @@ function hitWallCar(car) {
   const pos = car.model.position;
   for (const c of carCircles(car)) {
     const circle = { x: c.x, y: c.y, z: c.z };
-    const wall = hitBuildings(circle, CAR_WIDTH / 2);
+    const wall = hitBuildings(circle, car.width / 2);
     if (!wall) continue;
 
     // On déplace toute la voiture de ce dont le cercle a été repoussé
@@ -97,14 +97,15 @@ export function hitCars(a, b) {
       if (d < distance) { distance = d; dx = cb.x - ca.x; dz = cb.z - ca.z; }
     }
   }
-  if (distance >= CAR_WIDTH) return; // pas de contact
+  const reach = (a.width + b.width) / 2; // chacune a sa largeur (un camion est plus large qu'une voiture)
+  if (distance >= reach) return; // pas de contact
 
   // n = direction de a vers b (au hasard si elles sont pile au même endroit)
   const nx = distance > 0 ? dx / distance : 1;
   const nz = distance > 0 ? dz / distance : 0;
 
   // 1. On les écarte pour qu'elles ne restent pas l'une dans l'autre
-  const push = (CAR_WIDTH - distance) / 2;
+  const push = (reach - distance) / 2;
   pa.x -= nx * push; pa.z -= nz * push;
   pb.x += nx * push; pb.z += nz * push;
 
@@ -132,7 +133,7 @@ export function hitCars(a, b) {
 function carCircles(car) {
   const p = car.model.position;
   const angle = car.model.rotation.y - CAR_HEADING_OFFSET;
-  const half = (CAR_LENGTH - CAR_WIDTH) / 2;
+  const half = (car.length - car.width) / 2;
   const fx = Math.sin(angle) * half;
   const fz = Math.cos(angle) * half;
   // Dans une montée, l'avant est plus haut : il passe au-dessus du bord du pont

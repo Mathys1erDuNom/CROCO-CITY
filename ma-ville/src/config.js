@@ -39,16 +39,28 @@ export const SAFE_WIDTH = TILE_SIZE * 0.3;
 //  - sway         : écart à gauche/droite quand elle zigzague (0 = roule droit)
 //  - swayAngle    : combien elle tourne le nez en zigzaguant (radians)
 //  - speedSway    : variation de vitesse (0.5 = entre 50% et 150%)
+//  - overtake     : double par la gauche une voiture plus lente (sinon elle reste derrière)
+//  - yield        : attend à l'entrée d'un virage ou carrefour occupé (false = fonce, les autres l'attendent quand même)
 export const DRIVING_STYLES = {
-  calm:  { lane: TILE_SIZE * 0.15, speed: 2,   safeDistance: TILE_SIZE * 0.9,  maxWait: 5,   sway: 0,                swayAngle: 0,   speedSway: 0 },
-  fast:  { lane: TILE_SIZE * 0.15, speed: 5,   safeDistance: TILE_SIZE * 0.35, maxWait: 0.5, sway: 0,                swayAngle: 0,   speedSway: 0.2 },
-  drunk: { lane: 0,                speed: 2.5, safeDistance: TILE_SIZE * 0.3,  maxWait: 1,   sway: TILE_SIZE * 0.18, swayAngle: 0.4, speedSway: 0.5 },
+  calm:  { lane: TILE_SIZE * 0.15, speed: 2,   safeDistance: TILE_SIZE * 2,  maxWait: 5,   sway: 0,                swayAngle: 0,   speedSway: 0,   overtake: true,  yield: true },
+  fast:  { lane: TILE_SIZE * 0.15, speed: 5,   safeDistance: TILE_SIZE * 0.9, maxWait: 2, sway: 0,                swayAngle: 0,   speedSway: 0.2, overtake: true,  yield: true },
+  drunk: { lane: 0,                speed: 2.5, safeDistance: TILE_SIZE * 0.3,  maxWait: 1,   sway: TILE_SIZE * 0.18, swayAngle: 0.4, speedSway: 0.5, overtake: false, yield: false },
 };
 
+// --- Priorité dans les virages et carrefours ---
+export const YIELD_MAX_WAIT = 4;                // après ce temps à attendre l'entrée (secondes), elle y va quand même
+
+// --- Dépassement ---
+export const OVERTAKE_LANE = TILE_SIZE * 0.15;  // écart vers la gauche pendant un dépassement (voie d'en face)
+export const OVERTAKE_BOOST = 1.5;              // elle accélère pour doubler (x sa vitesse normale)
+export const OVERTAKE_CELLS = 2;                // cases de route droite nécessaires devant elle
+export const OVERTAKE_CLEAR = TILE_SIZE * 4;    // distance devant qui doit être vide (personne en face)
+export const OVERTAKE_SLOWER = 0.75;            // ne double que si la vitesse normale (style) de celle de devant est < 75% de la sienne, ou une épave
+export const OVERTAKE_MARGIN = TILE_SIZE * 0.25; // espace laissé devant la voiture doublée avant de se rabattre
+
 // --- Collisions ---
-// Une voiture = 2 cercles (avant + arrière) : elle est plus longue que large
-export const CAR_WIDTH = TILE_SIZE * 0.28;
-export const CAR_LENGTH = TILE_SIZE * 0.75;
+// Une voiture = 2 cercles (avant + arrière) : elle est plus longue que large.
+// Sa largeur et sa longueur sont mesurées sur son modèle (addVehicle), rien à régler ici.
 export const PED_RADIUS = TILE_SIZE * 0.06;    // "taille" d'un piéton
 export const CRASH_DURATION = 2.5;             // secondes d'immobilisation après un choc
 export const CRASH_BOUNCE = 0.3;               // rebond : 0 = les voitures restent collées, 1 = rebond parfait

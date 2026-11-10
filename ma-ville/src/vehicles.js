@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { placeModel } from './city.js';
 import { emitSmoke, emitFlame } from './effects.js';
 import {
-  TILE_SIZE, SINK_SPEED, SINK_DEPTH,
+  TILE_SIZE, SINK_SPEED, SINK_DEPTH, OVERTAKE_LANE, OVERTAKE_BOOST, OVERTAKE_CELLS, OVERTAKE_CLEAR, OVERTAKE_MARGIN, OVERTAKE_SLOWER, YIELD_MAX_WAIT,
   CAR_HEADING_OFFSET,
   SAFE_WIDTH,
   DRIVING_STYLES,
@@ -13,7 +13,6 @@ import {
   BUMP_SWERVE,
   BUMP_SHOVE,
   BUMP_ROLL,
-  CAR_LENGTH,
   DAMAGE_PER_IMPACT,
   FIRE_DAMAGE,
   FIRE_DELAY,
@@ -38,12 +37,18 @@ export async function addVehicle(scene, pack, name, col, row, style = 'calm') {
   if (!settings) throw new Error(`Style de conduite inconnu : "${style}" (choix : ${Object.keys(DRIVING_STYLES)})`);
 
   const model = await placeModel(scene, pack, name, col, row);
+  // Taille réelle du modèle (un camion est plus long qu'un taxi) : sert aux chocs et aux distances
+  const size = new THREE.Box3().setFromObject(model).getSize(new THREE.Vector3());
+  const sideways = Math.abs(Math.sin(CAR_HEADING_OFFSET)) > 0.5; // modèle tourné d'un quart de tour
+  const width = sideways ? size.z : size.x;
+  const length = sideways ? size.x : size.z;
   model.rotation.order = 'YXZ'; // tourne (y), puis penche avant/arrière (x) et sur le côté (z)
 
   const car = {
-    model, col, row,
+    model, col, row, width, length,
     nextCol: col, nextRow: row,
-    dir: null, style: settings, speed: settings.speed, waitTime: 0,
+    dir: null, style: settings, speed: settings.speed, waitTime: 0, yieldTime: 0,
+    queued: false, // ralentie ou arrêtée par une autre voiture (file, priorité) : on ne la double pas
     heading: 0,           // direction "normale", sans le zigzag
     time: Math.random() * 10, // décalage : deux voitures ne zigzaguent pas pareil
     offX: 0, offZ: 0,     // écart sur le côté (voie de droite + zigzag) appliqué en ce moment
@@ -77,6 +82,8 @@ function chooseNext(car) {
     );
     if (withoutUTurn.length > 0) options = withoutUTurn;
   }
+  // En plein dépassement : elle continue tout droit si elle peut
+  if (car.overtaking && options.includes(car.dir)) options = [car.dir];
   if (options.length === 0) return;
 
   const choice = options[Math.floor(Math.random() * options.length)];
@@ -138,13 +145,13 @@ function driveRing(car, pos, step) {
   return [fx, fz];
 }
 
-// Vrai si une voiture roulant dans le même sens gêne devant "car"
+// La voiture roulant dans le même sens qui gêne devant "car" (null si aucune)
 function isBlocked(car) {
-  if (!car.dir) return false;
+  if (!car.dir) return null;
   const pos = car.model.position;
 
   for (const other of vehicles) {
-    if (other === car) continue;
+    if (other === car || other === car.overtaking) continue; // celle qu'on double ne gêne plus
     // Les voitures en sens inverse ne sont PAS évitées : elles vont se percuter
     if (other.dir && other.dir.dc === -car.dir.dc && other.dir.dr === -car.dir.dr) continue;
 
@@ -153,9 +160,81 @@ function isBlocked(car) {
     const forward = dx * car.dir.dc + dz * car.dir.dr;
     const side = Math.abs(dx * car.dir.dr - dz * car.dir.dc);
 
-    if (forward > 0 && forward < car.style.safeDistance && side < SAFE_WIDTH) return true;
+    if (forward > 0 && forward < car.style.safeDistance && side < SAFE_WIDTH) return other;
   }
-  return false;
+  return null;
+}
+
+// Virage, carrefour ou cul-de-sac : toute case de route qui n'est pas une simple ligne droite
+function isTurnCell(col, row) {
+  const open = DIRECTIONS.filter((d) => canMove(col, row, d) && canDriveTo(col + d.dc, row + d.dr));
+  return !(open.length === 2 && open[0].dc === -open[1].dc && open[0].dr === -open[1].dr);
+}
+
+// Distance (en "carré") entre le milieu de la route sous la voiture et le centre de la case (col, row)
+function gapTo(car, col, row) {
+  const p = car.model.position;
+  return Math.max(Math.abs(p.x - car.offX - col * TILE_SIZE), Math.abs(p.z - car.offZ - row * TILE_SIZE));
+}
+
+// Vrai si la voiture doit attendre à l'entrée du virage ou du carrefour devant elle :
+// une voiture d'un autre sens y est déjà, ou y arrive avant elle. (En tournant, l'avant d'une voiture
+// passe sur la voie d'en face : à deux dans un virage, elles se touchent.)
+function mustYield(car) {
+  if (!car.style.yield || car.ring || !car.dir) return false;
+  const col = car.nextCol;
+  const row = car.nextRow;
+  if (inRoundabout(col, row) || !isTurnCell(col, row)) return false;
+  const reach = TILE_SIZE / 2 + car.length / 2; // en deçà, son avant est dans la case
+  const mine = gapTo(car, col, row);
+  if (mine < reach) return false; // déjà engagée : elle ne s'arrête pas au milieu
+  return vehicles.some((other) => {
+    if (other === car || other.state !== 'driving' || !other.model.visible || other.ring) return false;
+    if (other.dir === car.dir) return false; // même sens : la distance de sécurité suffit
+    const gap = gapTo(other, col, row);
+    if (gap < reach) return true;                                         // elle est dans la case
+    return other.nextCol === col && other.nextRow === row && gap < mine;  // elle arrive avant nous
+  });
+}
+
+// Vrai si "car" peut doubler "ahead" par la gauche : route droite devant, et personne sur la route devant
+function canOvertake(car, ahead) {
+  if (car.ring || !car.dir) return false;
+  // Celle de devant double déjà (elle est sur la voie de gauche), ou quelqu'un nous double : on reste à droite
+  if (ahead.overtaking || vehicles.some((other) => other.overtaking === car)) return false;
+  // Elle attend son tour (file, priorité à un virage) : elle n'est pas lente, on attend aussi
+  if (ahead.queued) return false;
+  // On ne double qu'une épave ou une voiture plus lente par nature (son style), pas sa vitesse d'un instant :
+  // elle saute d'une image à l'autre (centre de case, changement de voie) et ferait doubler sans raison
+  if (ahead.state === 'driving' && ahead.style.speed > car.style.speed * OVERTAKE_SLOWER) return false;
+  const { dc, dr } = car.dir;
+  const pos = car.model.position;
+  // Route droite jusqu'au-delà de celle qu'on double (pas de virage au milieu du dépassement)
+  const gap = (ahead.model.position.x - pos.x) * dc + (ahead.model.position.z - pos.z) * dr;
+  const cells = Math.max(OVERTAKE_CELLS, Math.ceil((gap + ahead.length + car.length) / TILE_SIZE) + 1);
+  for (let i = 1; i <= cells; i++) {
+    const c = car.col + dc * i;
+    const r = car.row + dr * i;
+    if (!canDriveTo(c, r) || inRoundabout(c, r) || !canMove(c - dc, r - dr, car.dir)) return false;
+  }
+  return !vehicles.some((other) => {
+    if (other === car || other === ahead || !other.model.visible) return false;
+    const dx = other.model.position.x - pos.x;
+    const dz = other.model.position.z - pos.z;
+    const forward = dx * dc + dz * dr;
+    const side = Math.abs(dx * dr - dz * dc);
+    return forward > -car.length && forward < OVERTAKE_CLEAR && side < TILE_SIZE * 0.5; // les 2 voies
+  });
+}
+
+// Fin du dépassement : elle est passée devant, l'autre est partie loin, ou elle a tourné
+function overtakeDone(car) {
+  const o = car.overtaking;
+  if (car.ring || car.dir !== car.overtakeDir) return true;
+  const forward = (o.model.position.x - car.model.position.x) * car.dir.dc +
+    (o.model.position.z - car.model.position.z) * car.dir.dr;
+  // Elle se rabat quand son arrière a dépassé l'avant de l'autre (+ une marge)
+  return forward < -((car.length + o.length) / 2 + OVERTAKE_MARGIN) || forward > car.style.safeDistance * 3;
 }
 
 // Déclenche (ou prolonge) l'accident d'une voiture.
@@ -165,6 +244,7 @@ export function crashCar(car, spin, impact) {
   car.damage = Math.min(100, car.damage + impact * DAMAGE_PER_IMPACT);
   car.smokeCount = Math.max(car.smokeCount, 1); // bouffée immédiate, sinon la 1re fumée tarde de plusieurs secondes
   car.state = 'crashed';
+  car.queued = false; // une épave, ça se double
   car.crashTimer = CRASH_DURATION;
   car.spin += spin;
   car.offX = car.offZ = 0; // l'écart sur le côté reste où il est, on ne le retire plus
@@ -191,15 +271,22 @@ function updateCrash(car, delta) {
 // la plus proche, puis reprend son trajet normalement (pas de téléportation)
 function recoverCar(car) {
   const pos = car.model.position;
-  // Case de route la plus proche, au même niveau qu'elle (pas le pont si elle est tombée en bas)
+  // Elle garde le sens où elle roulait avant le choc (même après un tête-à-queue) : jamais de demi-tour
+  const nose = car.model.rotation.y - CAR_HEADING_OFFSET;
+  const dir = car.dir ?? DIRECTIONS.reduce((b, d) =>
+    (d.dc * Math.sin(nose) + d.dr * Math.cos(nose) > b.dc * Math.sin(nose) + b.dr * Math.cos(nose) ? d : b));
+  // Case de route la plus proche, au même niveau qu'elle (pas le pont si elle est tombée en bas),
+  // de préférence devant elle : une case derrière ne sert que s'il n'y a rien devant
   let best = { col: car.col, row: car.row };
   let bestDistance = Infinity;
   MAP.forEach((line, row) => line.forEach((_, col) => {
     if (!canDriveTo(col, row)) return;
     const x = col * TILE_SIZE;
     const z = row * TILE_SIZE;
-    if (Math.abs(car.baseY + heightAt(x, z) - pos.y) > BRIDGE_HEIGHT / 2) return;
-    const distance = Math.hypot(x - pos.x, z - pos.z);
+    // >= : le milieu d'une rampe (mi-hauteur) est exclu, elle repart toujours d'une route normale
+    if (Math.abs(car.baseY + heightAt(x, z) - pos.y) >= BRIDGE_HEIGHT / 2) return;
+    const behind = (x - pos.x) * dir.dc + (z - pos.z) * dir.dr < -TILE_SIZE * 0.5;
+    const distance = Math.hypot(x - pos.x, z - pos.z) + (behind ? 1000 : 0);
     if (distance < bestDistance) { bestDistance = distance; best = { col, row }; }
   }));
   car.col = car.nextCol = best.col;
@@ -210,8 +297,8 @@ function recoverCar(car) {
   car.spin = 0;
   car.immunity = CRASH_IMMUNITY; // sinon elle repercute aussitôt l'autre voiture
   car.waitTime = 0;
-  car.dir = null; // pas de direction tant qu'elle rejoint la route (demi-tour permis ensuite)
   car.heading = Math.atan2(car.nextCol * TILE_SIZE - pos.x, car.nextRow * TILE_SIZE - pos.z) + CAR_HEADING_OFFSET;
+  car.dir = dir; // arrivée sur la route, elle continue ou tourne, sans revenir en arrière
 }
 
 // Roule sur un obstacle (ex : un corps) : elle saute un peu, penche et dévie.
@@ -233,7 +320,9 @@ export function bumpCar(car, strength) {
 // Hauteur : elle suit la route (rampes, ponts), et la gravité la fait retomber (bosse, chute d'un pont)
 function updateHeight(car, delta) {
   const pos = car.model.position;
-  const floor = car.baseY + heightAt(pos.x, pos.z);
+  let floor = car.baseY + heightAt(pos.x, pos.z);
+  // Bien plus basse que la route (sous un pont, au pied d'une rampe) : son sol est celui d'en bas, elle ne monte pas d'un coup
+  if (pos.y < floor - BRIDGE_HEIGHT / 2) floor = car.baseY;
 
   if (car.vy <= 0 && pos.y - floor < 0.08) {
     // Au sol : collée à la route, et penchée selon la pente (avant plus haut que l'arrière = nez levé)
@@ -241,10 +330,10 @@ function updateHeight(car, delta) {
     car.vy = 0;
     car.model.rotation.z = 0;
     const angle = car.model.rotation.y - CAR_HEADING_OFFSET;
-    const half = CAR_LENGTH / 2;
+    const half = car.length / 2;
     const front = heightAt(pos.x + Math.sin(angle) * half, pos.z + Math.cos(angle) * half);
     const back = heightAt(pos.x - Math.sin(angle) * half, pos.z - Math.cos(angle) * half);
-    car.model.rotation.x = -Math.atan2(front - back, CAR_LENGTH);
+    car.model.rotation.x = -Math.atan2(front - back, car.length);
     return;
   }
 
@@ -268,9 +357,9 @@ function updateDamage(car, delta) {
   // La fumée sort du capot (l'avant de la voiture)
   const angle = car.model.rotation.y - CAR_HEADING_OFFSET;
   const hood = {
-    x: pos.x + Math.sin(angle) * CAR_LENGTH * 0.3,
+    x: pos.x + Math.sin(angle) * car.length * 0.3,
     y: pos.y + 0.3,
-    z: pos.z + Math.cos(angle) * CAR_LENGTH * 0.3,
+    z: pos.z + Math.cos(angle) * car.length * 0.3,
   };
 
   const level = car.damage / 100;
@@ -349,12 +438,39 @@ export function updateVehicles(delta) {
       continue;
     }
 
-    // Une voiture devant gêne : on attend (temps limité)
-    if (isBlocked(car)) {
-      car.waitTime += delta;
-      if (car.waitTime < car.style.maxWait) {
-        car.vx = car.vz = 0; // à l'arrêt
+    if (car.overtaking && overtakeDone(car)) car.overtaking = null; // elle se rabat à droite
+
+    // Virage ou carrefour occupé par une voiture d'un autre sens : on attend à l'entrée (temps limité)
+    car.queued = false;
+    if (mustYield(car)) {
+      car.yieldTime += delta;
+      if (car.yieldTime < YIELD_MAX_WAIT) {
+        car.vx = car.vz = 0;
+        car.queued = true;
         continue;
+      }
+    } else {
+      car.yieldTime = 0;
+    }
+
+    // Une voiture devant gêne : elle double par la gauche si c'est possible, sinon elle reste derrière
+    const ahead = isBlocked(car);
+    let speedCap = Infinity;
+    if (ahead && car.style.overtake && canOvertake(car, ahead)) {
+      car.overtaking = ahead;
+      car.overtakeDir = car.dir;
+    } else if (ahead) {
+      car.queued = true;
+      const aheadSpeed = Math.hypot(ahead.vx, ahead.vz);
+      if (aheadSpeed > 0.1) {
+        speedCap = aheadSpeed; // elle roule à la vitesse de celle de devant
+      } else {
+        // Celle de devant est arrêtée : on attend (temps limité)
+        car.waitTime += delta;
+        if (car.waitTime < car.style.maxWait) {
+          car.vx = car.vz = 0; // à l'arrêt
+          continue;
+        }
       }
     } else {
       car.waitTime = 0;
@@ -372,6 +488,13 @@ export function updateVehicles(delta) {
 
     // Vitesse qui varie (sinus mélangés = irrégulier)
     car.speed = speed * (1 + speedSway * Math.sin(car.time * 1.3) * Math.sin(car.time * 0.7));
+    if (car.overtaking) {
+      // D'abord elle se décale sur la voie de gauche (à la vitesse de l'autre), ensuite elle accélère
+      const side = -car.offX * car.dir.dr + car.offZ * car.dir.dc; // écart actuel vers la droite
+      if (side > -OVERTAKE_LANE * 0.8) speedCap = Math.min(speedCap, Math.hypot(car.overtaking.vx, car.overtaking.vz));
+      else car.speed *= OVERTAKE_BOOST;
+    }
+    car.speed = Math.min(car.speed, speedCap);
 
     const step = car.speed * delta;
     let forward;
@@ -402,7 +525,7 @@ export function updateVehicles(delta) {
     if (forward) {
       const [fx, fz] = forward;
       const wave = sway > 0 ? Math.sin(car.time * 2.5) + 0.5 * Math.sin(car.time * 4.1) : 0;
-      const side = lane + wave * sway;
+      const side = (car.overtaking ? -OVERTAKE_LANE : lane) + wave * sway; // en dépassement : voie de gauche
       // On glisse vers l'écart voulu au lieu de sauter : changement de voie en douceur dans les virages
       const smooth = Math.min(1, delta * 8);
       car.offX += (-fz * side - car.offX) * smooth;
