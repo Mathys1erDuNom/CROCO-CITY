@@ -5,13 +5,18 @@
 // Taille d'une case de la grille (en unités three.js)
 export const TILE_SIZE = 2;
 
+// Hauteur d'un pont (2 dans la carte) : celle des modèles Kenney road-bridge / road-slant-high
+export const BRIDGE_HEIGHT = TILE_SIZE * 0.5;
+
 // --- Réglages par pack Kenney ---
 //  - scale : échelle (1 = taille d'origine)
 //  - y     : hauteur de pose
 export const PACK_SETTINGS = {
-  suburban: { scale: 1, y: 0 },
-  cars: { scale: 0.5, y: 0.1 },
-  characters: { scale: 1, y: 0 }
+  suburban: { scale: 2, y: 0 },
+  commercial: { scale: 2, y: 0 },
+  cars: { scale: 0.3, y: 0.1 },
+  characters: { scale: 0.5, y: 0 },
+  roads: { scale: TILE_SIZE, y: 0 }, // tuiles Kenney de 1x1 → 1 case
 };
 
 // Utilisé si un pack n'est pas listé ci-dessus
@@ -22,18 +27,40 @@ export const DEFAULT_SETTINGS = { scale: 1, y: 0 };
 // 0, Math.PI / 2, Math.PI ou -Math.PI / 2
 export const CAR_HEADING_OFFSET = 0;
 
-// Distance devant la voiture à partir de laquelle elle freine
-export const SAFE_DISTANCE = TILE_SIZE * 0.6;
-// Demi-largeur de la zone surveillée (gauche et droite)
+// Demi-largeur de la zone surveillée devant la voiture (gauche et droite)
 export const SAFE_WIDTH = TILE_SIZE * 0.3;
-// Après ce temps d'attente (secondes), la voiture repart quand même
-export const MAX_WAIT = 3;
+
+// --- Styles de conduite (choisis dans addVehicle) ---
+//  - speed        : vitesse normale
+//  - safeDistance : distance devant à partir de laquelle elle freine
+//  - maxWait      : après ce temps bloquée (secondes), elle repart quand même
+//  - lane         : décalage vers la droite de la route (0 = roule au milieu)
+//  - sway         : écart à gauche/droite quand elle zigzague (0 = roule droit)
+//  - swayAngle    : combien elle tourne le nez en zigzaguant (radians)
+//  - speedSway    : variation de vitesse (0.5 = entre 50% et 150%)
+export const DRIVING_STYLES = {
+  calm:  { lane: TILE_SIZE * 0.15, speed: 2,   safeDistance: TILE_SIZE * 0.9,  maxWait: 5,   sway: 0,                swayAngle: 0,   speedSway: 0 },
+  fast:  { lane: TILE_SIZE * 0.15, speed: 5,   safeDistance: TILE_SIZE * 0.35, maxWait: 0.5, sway: 0,                swayAngle: 0,   speedSway: 0.2 },
+  drunk: { lane: 0,                speed: 2.5, safeDistance: TILE_SIZE * 0.3,  maxWait: 1,   sway: TILE_SIZE * 0.18, swayAngle: 0.4, speedSway: 0.5 },
+};
 
 // --- Collisions ---
-export const CAR_RADIUS = TILE_SIZE * 0.25;    // "taille" d'une voiture pour les chocs
+// Une voiture = 2 cercles (avant + arrière) : elle est plus longue que large
+export const CAR_WIDTH = TILE_SIZE * 0.28;
+export const CAR_LENGTH = TILE_SIZE * 0.75;
 export const PED_RADIUS = TILE_SIZE * 0.06;    // "taille" d'un piéton
 export const CRASH_DURATION = 2.5;             // secondes d'immobilisation après un choc
-export const CRASH_KNOCKBACK = TILE_SIZE * 2;  // force du rebond entre deux voitures
+export const CRASH_BOUNCE = 0.3;               // rebond : 0 = les voitures restent collées, 1 = rebond parfait
+export const CRASH_MIN_SPEED = TILE_SIZE * 0.5; // en dessous de cette vitesse d'impact : simple accrochage, pas d'accident
+export const CRASH_SPIN = 1.2;                 // un choc de biais fait tourner la voiture (x vitesse de glissement)
+// --- Dégâts ---
+// Chaque choc ajoute (vitesse d'impact x DAMAGE_PER_IMPACT) de dégâts, jusqu'à 100.
+// Elle fume de plus en plus. A partir de FIRE_DAMAGE, elle prend feu au bout de FIRE_DELAY secondes, et ne repart plus.
+export const DAMAGE_PER_IMPACT = 8;            // ex : choc frontal entre deux "fast" (impact 10) = 80
+export const FIRE_DAMAGE = 70;
+export const FIRE_DELAY = 4;
+export const SMOKE_RATE = 2;                  // bouffées de fumée par seconde à 100 de dégâts
+export const FLAME_RATE = 15;                  // flammes par seconde quand elle brûle
 export const CRASH_IMMUNITY = 1.5;             // secondes sans collision après être reparti
 
 // --- Piéton ---
@@ -41,4 +68,24 @@ export const PED_SPEED = TILE_SIZE * 0.4;      // vitesse de marche
 export const LAUNCH_FACTOR = 2.5;              // vitesse de projection = vitesse voiture x ce facteur
 export const LAUNCH_UP = 6;                    // vitesse initiale vers le haut
 export const GRAVITY = 20;
-export const PED_RESPAWN = 3;                  // secondes au sol avant de réapparaître
+// --- Combattant (piéton 'fighter') ---
+export const FIGHTER_SPEED = PED_SPEED * 1.6;  // il marche vite
+export const FIGHTER_SIGHT = TILE_SIZE * 6;    // voit ses cibles jusqu'à cette distance
+export const FIGHTER_CHARGE = TILE_SIZE * 1.2; // à cette distance, il fonce droit sur sa cible
+export const PUNCH_RANGE = TILE_SIZE * 0.2;    // portée du coup (en plus de la taille des deux)
+export const PUNCH_POWER = 1.5;                // force du coup (une voiture "fast" = 5)
+export const PUNCH_UP = 1;                     // un coup soulève moins qu'une voiture
+export const PUNCH_COOLDOWN = 1;               // secondes entre deux coups
+export const PED_BOUNCE = 0.5;                 // rebond d'un piéton projeté contre un mur (0 à 1)
+
+// --- Voiture qui roule sur un piéton au sol (comme sur une bosse) ---
+// Les effets sont à 100% à la vitesse BUMP_FULL_SPEED, plus faibles en dessous
+export const BODY_RADIUS = TILE_SIZE * 0.15;   // "taille" d'un corps couché
+export const BUMP_FULL_SPEED = 5;
+export const BUMP_UP = 3;                      // saut de la voiture (vitesse vers le haut)
+export const BUMP_SWERVE = 0.5;                // déviation du nez (radians, au hasard à gauche ou à droite)
+export const BUMP_SHOVE = TILE_SIZE * 0.15;    // écart sur le côté
+export const BUMP_ROLL = 1.5;                  // la voiture penche en l'air
+export const BUMP_PUSH = 0.4;                  // le corps est poussé (x vitesse de la voiture)// Rayon de la voie des ronds-points (milieu de l'anneau, depuis le centre)
+// shortcut: réglé à l'œil sur road-roundabout ; à ajuster si les voitures mordent l'îlot ou l'herbe
+export const RING_RADIUS = TILE_SIZE * 0.75; // plus petit = plus près de l'îlot

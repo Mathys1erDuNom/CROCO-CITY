@@ -1,15 +1,21 @@
 import * as THREE from 'three';
-import { createScene } from './scene.js';
+import { createScene, updateCamera } from './scene.js';
 import { loadModel } from './loader.js';
-import { placeModel } from './city.js';
+import { addBuilding } from './buildings.js';
 import { addVehicle, updateVehicles } from './vehicles.js';
 import { drawRoads } from './roads.js';
 import { COLS, ROWS } from './map.js';
 import { TILE_SIZE } from './config.js';
 import { addPedestrian, updatePedestrians } from './pedestrians.js';
 import { checkCollisions } from './collisions.js';
+import { updateEffects } from './effects.js';
 
 const { scene, camera, renderer, controls } = createScene();
+
+// La caméra regarde le centre de la ville au démarrage
+const center = new THREE.Vector3(((COLS - 1) / 2) * TILE_SIZE, 0, ((ROWS - 1) / 2) * TILE_SIZE);
+controls.target.copy(center);
+camera.position.set(center.x, 12, center.z + 12);
 
 // Le sol couvre exactement la carte, centré sur elle
 const ground = new THREE.Mesh(
@@ -25,21 +31,25 @@ ground.rotation.x = -Math.PI / 2;
 scene.add(ground);
 
 async function buildCity() {
-  drawRoads(scene);
+  await drawRoads(scene);
 
   // Bâtiments sur des cases d'herbe (0 dans la carte)
-  //await placeModel(scene, 'suburban', 'building-type-a', 2, 3);
-  await placeModel(scene, 'suburban', 'building-type-b', 1, 0);
+  // addBuilding = placeModel + collisions (rien ne traverse)
+  
+  await addBuilding(scene, 'suburban', 'building-type-b', 1, 0, { rotation: 2 });  // rotation 90°
+  await addBuilding(scene, 'commercial', 'building-skyscraper-a', 3, 0, { rotation: 2 }); // rotation 180°
 
   // Voitures : elles démarrent sur une case de route (1 dans la carte)
-  await addVehicle(scene, 'cars', 'ambulance', 0, 0, 3);
-  await addVehicle(scene, 'cars', 'taxi', 4, 3, 2); 
+  await addVehicle(scene, 'cars', 'ambulance', 3, 3, 'fast');  // style : 'calm', 'fast' ou 'drunk'
+  await addVehicle(scene, 'cars', 'taxi', 13, 8, 'drunk');
+  await addVehicle(scene, 'cars', 'taxi', 8, 8, 'calm');
 
   // Quelques piéton sur des cases de route
     // Personnages : pack, nom du fichier SANS .glb, colonne, ligne
-  await addPedestrian(scene, 'characters', 'character-alien', 3, 3);
-  await addPedestrian(scene, 'characters', 'character-alien', 5, 6);
-  await addPedestrian(scene, 'characters', 'character-alien', 1, 0);
+  await addPedestrian(scene, 'characters', 'character-alien', 3, 3, 'crazy');      // style : 'crazy', 'calm', 'distracted' ou 'fighter'
+  await addPedestrian(scene, 'characters', 'character-female-a', 5, 6, 'distracted');
+  await addPedestrian(scene, 'characters', 'character-male-b', 1, 0, 'calm');
+  await addPedestrian(scene, 'characters', 'character-zombie', 1, 5, 'fighter');
 
 
   //await addPedestrian(scene, 'characters', 'aid_hearing.glb', 3, 3);
@@ -57,9 +67,10 @@ function animate() {
   const delta = clock.getDelta(); // secondes depuis la dernière image
   updateVehicles(delta);          // fait avancer les voitures
   updatePedestrians(delta);       // ← fait marcher les piétons
+  updateEffects(delta);           // fumée et flammes
   checkCollisions();              // ← détecte les chocs (toujours APRÈS les déplacements)
 
-  controls.update();
+  updateCamera(camera, controls, delta); // clavier + souris
   renderer.render(scene, camera);
 }
 animate();

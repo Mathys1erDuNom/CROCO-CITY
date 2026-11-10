@@ -1,0 +1,77 @@
+import * as THREE from 'three';
+
+// Particules (fumée, flammes) : des petits disques flous qui montent, grossissent et s'effacent
+const particles = [];
+const MAX_PARTICLES = 400; // au-delà, on n'en crée plus : la page reste fluide
+
+let texture = null;
+function getTexture() {
+  if (texture) return texture;
+  // Disque blanc flou dessiné une seule fois, teinté ensuite par la couleur de chaque particule
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = 64;
+  const ctx = canvas.getContext('2d');
+  const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+  gradient.addColorStop(0, 'rgba(255,255,255,1)');
+  gradient.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, 64, 64);
+  texture = new THREE.CanvasTexture(canvas);
+  return texture;
+}
+
+function emit(scene, pos, { color, size, grow, life, rise, spread, opacity, glow = false }) {
+  if (particles.length >= MAX_PARTICLES) return;
+  const material = new THREE.SpriteMaterial({
+    map: getTexture(), color, transparent: true, opacity, depthWrite: false,
+    blending: glow ? THREE.AdditiveBlending : THREE.NormalBlending, // les flammes s'additionnent = brillent
+  });
+  const sprite = new THREE.Sprite(material);
+  sprite.position.set(pos.x, pos.y, pos.z);
+  sprite.scale.setScalar(size);
+  scene.add(sprite);
+  particles.push({
+    sprite, life, maxLife: life, grow, opacity,
+    vx: (Math.random() - 0.5) * spread,
+    vy: rise * (0.7 + Math.random() * 0.6),
+    vz: (Math.random() - 0.5) * spread,
+  });
+}
+
+const LIGHT_SMOKE = new THREE.Color(0xcccccc);
+const BLACK_SMOKE = new THREE.Color(0x1a1a1a);
+
+// darkness : 0 = fumée blanche légère, 1 = fumée noire épaisse
+export function emitSmoke(scene, pos, darkness) {
+  emit(scene, pos, {
+    color: LIGHT_SMOKE.clone().lerp(BLACK_SMOKE, darkness),
+    size: 0.25 + darkness * 0.25, grow: 1.2, life: 1.5 + darkness * 1.5,
+    rise: 0.8, spread: 0.4, opacity: 0.4 + darkness * 0.4,
+  });
+}
+
+export function emitFlame(scene, pos) {
+  emit(scene, pos, {
+    color: new THREE.Color().setHSL(0.02 + Math.random() * 0.08, 1, 0.55), // rouge à orange
+    size: 0.4, grow: -0.9, life: 0.5 + Math.random() * 0.3,
+    rise: 1.6, spread: 0.6, opacity: 0.9, glow: true,
+  });
+}
+
+export function updateEffects(delta) {
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.life -= delta;
+    if (p.life <= 0) {
+      p.sprite.removeFromParent();
+      p.sprite.material.dispose();
+      particles.splice(i, 1);
+      continue;
+    }
+    p.sprite.position.x += p.vx * delta;
+    p.sprite.position.y += p.vy * delta;
+    p.sprite.position.z += p.vz * delta;
+    p.sprite.scale.multiplyScalar(Math.max(0, 1 + p.grow * delta));
+    p.sprite.material.opacity = p.opacity * (p.life / p.maxLife);
+  }
+}
