@@ -1,6 +1,6 @@
 import { TILE_SIZE, BRIDGE_HEIGHT } from './config.js';
 
-// La carte de la ville : 0 = herbe, 1 = route, 2 = pont (route en hauteur).
+// La carte de la ville : 0 = herbe, 1 = route, 2 = pont (route en hauteur), 3 = eau, 4 = plage.
 // Une route (1) collée au bout d'un pont, dans son axe, devient toute seule une rampe.
 // Chaque ligne du tableau est une ligne de la grille (row),
 // chaque chiffre est une colonne (col).
@@ -14,11 +14,11 @@ export const MAP = [
   [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
   [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
   [0, 0, 0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [4, 4, 4, 4, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [3, 3, 3, 3, 3, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [3, 3, 3, 3, 3, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [3, 3, 3, 3, 3, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [3, 3, 3, 3, 3, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 ];
 
 export const ROWS = MAP.length;
@@ -58,6 +58,12 @@ export function isFree(col, row) {
 export function isGrass(col, row) {
   return MAP[row]?.[col] === 0 && isFree(col, row);
 }
+
+// Eau et plage
+export const isWater = (col, row) => MAP[row]?.[col] === 3;
+export const isBeach = (col, row) => MAP[row]?.[col] === 4 && isFree(col, row);
+// Vrai si le point (x, z) est au-dessus d'une case d'eau
+export const isWaterAt = (x, z) => isWater(Math.round(x / TILE_SIZE), Math.round(z / TILE_SIZE));
 
 // --- Ponts et rampes ---
 

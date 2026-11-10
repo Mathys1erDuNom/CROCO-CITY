@@ -50,6 +50,15 @@ export function emitSmoke(scene, pos, darkness) {
   });
 }
 
+// Gouttes d'eau blanches : partent vite sur les côtés et vers le haut, et s'effacent tôt
+const SPLASH = new THREE.Color(0xe6f4ff);
+export function emitSplash(scene, pos) {
+  emit(scene, pos, {
+    color: SPLASH, size: 0.12, grow: 1.5, life: 0.35 + Math.random() * 0.2,
+    rise: 1.2, spread: 1.4, opacity: 0.8,
+  });
+}
+
 export function emitFlame(scene, pos) {
   emit(scene, pos, {
     color: new THREE.Color().setHSL(0.02 + Math.random() * 0.08, 1, 0.55), // rouge à orange

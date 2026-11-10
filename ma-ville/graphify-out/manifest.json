@@ -1,0 +1,146 @@
+{
+  "package.json": {
+    "mtime": 1794229441.591619,
+    "seen": 1794329456.051216,
+    "ast_hash": "1a8ca29a666c6ef7aa12e4f92b514487",
+    "semantic_hash": "1a8ca29a666c6ef7aa12e4f92b514487"
+  },
+  "src/buildings.js": {
+    "mtime": 1794307140.9689496,
+    "seen": 1794329456.051221,
+    "ast_hash": "ff4a2d8814f8b93cd7c3b1e08c873dcc",
+    "semantic_hash": "ff4a2d8814f8b93cd7c3b1e08c873dcc"
+  },
+  "src/city.js": {
+    "mtime": 1794240670.1130676,
+    "seen": 1794329456.051224,
+    "ast_hash": "3d95f93865dd3077f0804000e9a57be9",
+    "semantic_hash": "3d95f93865dd3077f0804000e9a57be9"
+  },
+  "src/collisions.js": {
+    "mtime": 1794308468.3265898,
+    "seen": 1794329456.0512269,
+    "ast_hash": "97f8c33940b62f9130c80693a43b8ce6",
+    "semantic_hash": "97f8c33940b62f9130c80693a43b8ce6"
+  },
+  "src/config.js": {
+    "mtime": 1794331973.5276508,
+    "seen": 1794331978.82768,
+    "ast_hash": "069ff9f32813b6d20645d78d6d3a54ab",
+    "semantic_hash": ""
+  },
+  "src/effects.js": {
+    "mtime": 1794331973.527169,
+    "seen": 1794331978.827683,
+    "ast_hash": "75429047f592f8b90eb2c418b2c1865f",
+    "semantic_hash": ""
+  },
+  "src/loader.js": {
+    "mtime": 1794209942.4783087,
+    "seen": 1794329456.051235,
+    "ast_hash": "78b1994efdcad77b86bc3948dcbc2647",
+    "semantic_hash": "78b1994efdcad77b86bc3948dcbc2647"
+  },
+  "src/main.js": {
+    "mtime": 1794331826.7235928,
+    "seen": 1794331894.677055,
+    "ast_hash": "95aa0e5bf7f4c9e102892e7d286c67c9",
+    "semantic_hash": ""
+  },
+  "src/map.js": {
+    "mtime": 1794330976.320142,
+    "seen": 1794331032.3099751,
+    "ast_hash": "bdfe60eaa1e9269f3af011422bb24432",
+    "semantic_hash": ""
+  },
+  "src/pedestrians.js": {
+    "mtime": 1794331973.5258434,
+    "seen": 1794331978.8276942,
+    "ast_hash": "5df31a422e2a867614ade1a264918093",
+    "semantic_hash": ""
+  },
+  "src/roads.js": {
+    "mtime": 1794317605.5441658,
+    "seen": 1794329456.051244,
+    "ast_hash": "5b2754affb9005f9b831fb6b5a90d9db",
+    "semantic_hash": "5b2754affb9005f9b831fb6b5a90d9db"
+  },
+  "src/scene.js": {
+    "mtime": 1794308861.3068447,
+    "seen": 1794329456.0512471,
+    "ast_hash": "0651ad70487bb6372ff8223fbab9e55e",
+    "semantic_hash": "0651ad70487bb6372ff8223fbab9e55e"
+  },
+  "src/vehicles.js": {
+    "mtime": 1794331018.5345097,
+    "seen": 1794331032.309987,
+    "ast_hash": "393170c9d1b2b7f1514ce1bf64f82377",
+    "semantic_hash": ""
+  },
+  "vite.config.js": {
+    "mtime": 1794240372.409243,
+    "seen": 1794329456.051251,
+    "ast_hash": "986da3be58d8fbaf2463df8ab1d12603",
+    "semantic_hash": "986da3be58d8fbaf2463df8ab1d12603"
+  },
+  "index.html": {
+    "mtime": 1794208847.5366163,
+    "seen": 1794329456.051253,
+    "ast_hash": "1c4f80904a5217e031cfd59edafbdfc2",
+    "semantic_hash": "1c4f80904a5217e031cfd59edafbdfc2"
+  },
+  "public/models/cars/Textures/colormap.png": {
+    "mtime": 1775135036.0,
+    "seen": 1794329456.0512562,
+    "ast_hash": "451b163d51d08b73f7d98244fef3f979",
+    "semantic_hash": "451b163d51d08b73f7d98244fef3f979"
+  },
+  "public/models/characters/Textures/colormap.png": {
+    "mtime": 1775135036.0,
+    "seen": 1794329456.051258,
+    "ast_hash": "451b163d51d08b73f7d98244fef3f979",
+    "semantic_hash": "451b163d51d08b73f7d98244fef3f979"
+  },
+  "public/models/commercial/Textures/colormap.png": {
+    "mtime": 1753118198.0,
+    "seen": 1794329456.05126,
+    "ast_hash": "68b9af4d878fc3cece9bba766a927039",
+    "semantic_hash": "68b9af4d878fc3cece9bba766a927039"
+  },
+  "public/models/roads/Textures/colormap.png": {
+    "mtime": 1791632122.0,
+    "seen": 1794329456.051263,
+    "ast_hash": "ed0b867825794a6d5e1b7e81044db437",
+    "semantic_hash": "ed0b867825794a6d5e1b7e81044db437"
+  },
+  "public/models/suburban/Textures/colormap.png": {
+    "mtime": 1745436190.0,
+    "seen": 1794329456.051265,
+    "ast_hash": "510f70f4ab2c145cc5e35a5149bf8905",
+    "semantic_hash": "510f70f4ab2c145cc5e35a5149bf8905"
+  },
+  ".claude/settings.json": {
+    "mtime": 1794330182.9807467,
+    "seen": 1794330419.96062,
+    "ast_hash": "311c49b40df64bdcfcd1d4ac02e8b52b",
+    "semantic_hash": ""
+  },
+  ".claude/CLAUDE.md": {
+    "mtime": 1794330182.976088,
+    "seen": 1794330419.960674,
+    "ast_hash": "9b31786b637be3c13978bec4c2330752",
+    "semantic_hash": ""
+  },
+  "CLAUDE.md": {
+    "mtime": 1794329885.0257688,
+    "seen": 1794330419.9606771,
+    "ast_hash": "67d88e9d0760c3ba54c75dfd9551c1c5",
+    "semantic_hash": ""
+  },
+  "package-lock.json": {
+    "mtime": 1794229397.6360402,
+    "seen": 1794330419.9606981,
+    "ast_hash": "d9eb6d4bd0174b5d296a28b64d1a82b4",
+    "semantic_hash": ""
+  }
+}

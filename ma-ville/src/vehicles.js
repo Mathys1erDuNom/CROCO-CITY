@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { placeModel } from './city.js';
 import { emitSmoke, emitFlame } from './effects.js';
 import {
-  TILE_SIZE,
+  TILE_SIZE, SINK_SPEED, SINK_DEPTH,
   CAR_HEADING_OFFSET,
   SAFE_WIDTH,
   DRIVING_STYLES,
@@ -22,7 +22,7 @@ import {
   BRIDGE_HEIGHT,
   RING_RADIUS,
 } from './config.js';
-import { MAP, isRoad, canMove, heightAt, DIRECTIONS, ROUNDABOUTS, inRoundabout } from './map.js';
+import { MAP, isRoad, isWaterAt, canMove, heightAt, DIRECTIONS, ROUNDABOUTS, inRoundabout } from './map.js';
 
 // Branche de rond-point = case juste à côté d'un centre (seules cases du rond-point où l'on roule en ligne droite)
 const isArm = (col, row) => ROUNDABOUTS.some((rb) => Math.abs(rb.col - col) + Math.abs(rb.row - row) === 1);
@@ -163,6 +163,7 @@ function isBlocked(car) {
 // impact : vitesse du choc, qui donne les dégâts
 export function crashCar(car, spin, impact) {
   car.damage = Math.min(100, car.damage + impact * DAMAGE_PER_IMPACT);
+  car.smokeCount = Math.max(car.smokeCount, 1); // bouffée immédiate, sinon la 1re fumée tarde de plusieurs secondes
   car.state = 'crashed';
   car.crashTimer = CRASH_DURATION;
   car.spin += spin;
@@ -310,8 +311,33 @@ function igniteCar(car) {
   car.model.add(car.fireLight);
 }
 
+// Tombée dans l'eau : elle glisse encore un peu, pique du nez et coule. Elle ne repart jamais.
+function sinkCar(car, delta) {
+  const pos = car.model.position;
+  if (!car.sinking) {
+    car.sinking = true;
+    car.state = 'crashed'; // plus de piétons renversés
+    car.onFire = false;    // l'eau éteint le feu
+    if (car.fireLight) car.fireLight.intensity = 0;
+  }
+  if (!car.model.visible) return;
+  pos.x += car.vx * delta;
+  pos.z += car.vz * delta;
+  const drag = Math.max(0, 1 - 3 * delta); // l'eau freine fort
+  car.vx *= drag;
+  car.vz *= drag;
+  pos.y -= SINK_SPEED * delta;
+  car.model.rotation.x += (0.4 - car.model.rotation.x) * Math.min(1, delta * 2);
+  if (pos.y < car.baseY - SINK_DEPTH) car.model.visible = false; // au fond
+}
+
 export function updateVehicles(delta) {
   for (const car of vehicles) {
+    const p = car.model.position;
+    if (car.sinking || (isWaterAt(p.x, p.z) && p.y < car.baseY + 0.1)) {
+      sinkCar(car, delta);
+      continue;
+    }
     if (car.immunity > 0) car.immunity -= delta;
     if (car.bumpCooldown > 0) car.bumpCooldown -= delta;
     updateHeight(car, delta);

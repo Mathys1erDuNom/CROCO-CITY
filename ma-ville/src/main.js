@@ -4,7 +4,7 @@ import { loadModel } from './loader.js';
 import { addBuilding } from './buildings.js';
 import { addVehicle, updateVehicles } from './vehicles.js';
 import { drawRoads } from './roads.js';
-import { COLS, ROWS } from './map.js';
+import { COLS, ROWS, MAP } from './map.js';
 import { TILE_SIZE } from './config.js';
 import { addPedestrian, updatePedestrians } from './pedestrians.js';
 import { checkCollisions } from './collisions.js';
@@ -30,6 +30,20 @@ scene.add(ground);
 ground.rotation.x = -Math.PI / 2;
 scene.add(ground);
 
+// Eau (3) et plage (4) : une dalle de couleur posée juste au-dessus de l'herbe
+const TERRAIN = {
+  3: new THREE.MeshStandardMaterial({ color: 0x3a8fd9 }),
+  4: new THREE.MeshStandardMaterial({ color: 0xe8d39a }),
+};
+const tileGeometry = new THREE.PlaneGeometry(TILE_SIZE, TILE_SIZE);
+MAP.forEach((line, row) => line.forEach((cell, col) => {
+  if (!TERRAIN[cell]) return;
+  const tile = new THREE.Mesh(tileGeometry, TERRAIN[cell]);
+  tile.rotation.x = -Math.PI / 2;
+  tile.position.set(col * TILE_SIZE, 0.01, row * TILE_SIZE);
+  scene.add(tile);
+}));
+
 async function buildCity() {
   await drawRoads(scene);
 
@@ -50,6 +64,12 @@ async function buildCity() {
   await addPedestrian(scene, 'characters', 'character-female-a', 5, 6, 'distracted');
   await addPedestrian(scene, 'characters', 'character-male-b', 1, 0, 'calm');
   await addPedestrian(scene, 'characters', 'character-zombie', 1, 5, 'fighter');
+
+
+  // Animal
+  await addPedestrian(scene, 'animal', 'crocodile/crocodile', 1, 10, 'crocodile');
+  await addPedestrian(scene, 'characters', 'character-female-a', 2, 12, 'distracted');
+  await addPedestrian(scene, 'characters', 'character-female-a',3, 10, 'distracted');
 
 
   //await addPedestrian(scene, 'characters', 'aid_hearing.glb', 3, 3);

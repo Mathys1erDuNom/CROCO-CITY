@@ -17,6 +17,7 @@ export const PACK_SETTINGS = {
   cars: { scale: 0.3, y: 0.1 },
   characters: { scale: 0.5, y: 0 },
   roads: { scale: TILE_SIZE, y: 0 }, // tuiles Kenney de 1x1 → 1 case
+  animal: { scale: 0.4, y: 0 },      // crocodile : 4.5 de long à l'origine → 1.8 (~1 case)
 };
 
 // Utilisé si un pack n'est pas listé ci-dessus
@@ -77,6 +78,20 @@ export const PUNCH_POWER = 1.5;                // force du coup (une voiture "fa
 export const PUNCH_UP = 1;                     // un coup soulève moins qu'une voiture
 export const PUNCH_COOLDOWN = 1;               // secondes entre deux coups
 export const PED_BOUNCE = 0.5;                 // rebond d'un piéton projeté contre un mur (0 à 1)
+
+// --- Eau (3 dans la carte) ---
+export const FLOAT_SINK = 0.1;                 // un piéton dans l'eau s'enfonce de ça (plus grand = seule la tête dépasse)
+export const CROC_SWIM_DEPTH = 0.12;           // le crocodile nage plus bas : seuls les yeux et le dos dépassent
+export const FLOAT_BOB = 0.05;                 // hauteur des vagues (monte et descend)
+export const SINK_SPEED = 0.4;                 // une voiture dans l'eau coule à cette vitesse
+export const SINK_DEPTH = 1;                   // à cette profondeur, elle disparaît
+// --- Crocodile (piéton 'crocodile') ---
+export const CROC_DRAG_SPEED = PED_SPEED;      // vitesse quand il ramène sa proie dans l'eau
+export const CROC_SWIM_BOOST = 2;              // dans l'eau, il va 2x plus vite (1 = pareil que sur la plage)
+export const CROC_MOUTH = 0.8;                 // distance entre son centre et sa gueule (où pend la proie)
+export const DROWN_TIME = 3;                   // secondes pour emmener la proie au fond, puis elle disparaît
+export const SPLASH_RATE = 12;                // éclaboussures par seconde quand un piéton bouge dans l'eau
+export const DROWN_DEPTH = 1;                  // profondeur où il l'emmène
 
 // --- Voiture qui roule sur un piéton au sol (comme sur une bosse) ---
 // Les effets sont à 100% à la vitesse BUMP_FULL_SPEED, plus faibles en dessous
