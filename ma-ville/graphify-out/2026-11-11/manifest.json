@@ -42,9 +42,9 @@
     "semantic_hash": "78b1994efdcad77b86bc3948dcbc2647"
   },
   "src/main.js": {
-    "mtime": 1794337594.6499012,
-    "seen": 1794337788.092993,
-    "ast_hash": "96052214dcc8644bbf1acdfe79ad63b2",
+    "mtime": 1794399522.5451984,
+    "seen": 1794399532.4440498,
+    "ast_hash": "2de00b7b7d4682739a3361f8e5f8fe61",
     "semantic_hash": ""
   },
   "src/map.js": {
@@ -84,10 +84,10 @@
     "semantic_hash": "986da3be58d8fbaf2463df8ab1d12603"
   },
   "index.html": {
-    "mtime": 1794208847.5366163,
-    "seen": 1794329456.051253,
-    "ast_hash": "1c4f80904a5217e031cfd59edafbdfc2",
-    "semantic_hash": "1c4f80904a5217e031cfd59edafbdfc2"
+    "mtime": 1794399520.4982765,
+    "seen": 1794399532.444097,
+    "ast_hash": "e25f4d1134dad494f03d73fa78a81c47",
+    "semantic_hash": ""
   },
   "public/models/cars/Textures/colormap.png": {
     "mtime": 1775135036.0,

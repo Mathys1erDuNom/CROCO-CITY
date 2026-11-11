@@ -36,10 +36,10 @@
     "semantic_hash": ""
   },
   "src/loader.js": {
-    "mtime": 1794209942.4783087,
-    "seen": 1794329456.051235,
-    "ast_hash": "78b1994efdcad77b86bc3948dcbc2647",
-    "semantic_hash": "78b1994efdcad77b86bc3948dcbc2647"
+    "mtime": 1794399963.1651826,
+    "seen": 1794399972.937669,
+    "ast_hash": "bbe4f99d2f4fbef51f73c13bf23b5eee",
+    "semantic_hash": ""
   },
   "src/main.js": {
     "mtime": 1794399522.5451984,
