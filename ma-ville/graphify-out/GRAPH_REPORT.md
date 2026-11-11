@@ -1,10 +1,10 @@
-# Graph Report - ma-ville  (2026-11-10)
+# Graph Report - ma-ville  (2026-11-11)
 
 ## Corpus Check
-- 17 files · ~11,873 words
+- 17 files · ~11,989 words
 - Verdict: corpus is large enough that graph structure adds value.
-- Unclassified: 164 file(s) not represented in the graph (top: .glb 162, .graphify-bak 1, (none) 1)
-- WARNING: 164 of 187 files seen (88%) have no supported extractor and are missing from this graph entirely. It may look complete while representing only part of the codebase.
+- Unclassified: 180 file(s) not represented in the graph (top: .glb 178, .graphify-bak 1, (none) 1)
+- WARNING: 180 of 203 files seen (89%) have no supported extractor and are missing from this graph entirely. It may look complete while representing only part of the codebase.
 
 ## Summary
 - 192 nodes · 448 edges · 10 communities (8 shown, 2 thin omitted)
@@ -12,7 +12,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `fa5507c4`
+- Built from commit: `187a8701`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -35,8 +35,8 @@
 4. `placeModel()` - 10 edges
 5. `drawRoads()` - 9 edges
 6. `updatePedestrians()` - 9 edges
-7. `canDriveTo()` - 8 edges
-8. `isRoad()` - 8 edges
+7. `isRoad()` - 8 edges
+8. `canDriveTo()` - 8 edges
 9. `isWaterAt()` - 8 edges
 10. `chooseNext()` - 8 edges
 
@@ -49,8 +49,8 @@
   public/models/roads/Textures/colormap.png → public/models/cars/Textures/colormap.png
 - `Commercial Colormap Texture Atlas` --semantically_similar_to--> `Suburban Colormap Texture Atlas`  [INFERRED] [semantically similar]
   public/models/commercial/Textures/colormap.png → public/models/suburban/Textures/colormap.png
-- `canDriveTo()` --calls--> `isRoad()`  [EXTRACTED]
-  src/vehicles.js → src/map.js
+- `buildCity()` --calls--> `drawRoads()`  [EXTRACTED]
+  src/main.js → src/roads.js
 
 ## Import Cycles
 - None detected.

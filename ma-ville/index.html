@@ -6,9 +6,16 @@
     <style>
       /* Le canvas 3D occupe toute la fenêtre */
       body { margin: 0; overflow: hidden; }
+      /* Écran de chargement : recouvre tout jusqu'à ce que la ville soit prête */
+      #loading {
+        position: fixed; inset: 0; z-index: 10;
+        display: grid; place-items: center;
+        background: #1d2b1f; color: #fff; font: 24px sans-serif;
+      }
     </style>
   </head>
   <body>
+    <div id="loading" role="status">Chargement de la ville…</div>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

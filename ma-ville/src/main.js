@@ -105,7 +105,6 @@ async function buildCity() {
   //await addPedestrian(scene, 'characters', 'aid_hearing.glb', 3, 3);
   
 }
-buildCity();
 
 
 // L'horloge mesure le temps entre deux images
@@ -123,4 +122,11 @@ function animate() {
   updateCamera(camera, controls, delta); // clavier + souris
   renderer.render(scene, camera);
 }
-animate();
+
+// On attend que tous les modèles soient chargés avant d'afficher et d'animer la ville.
+// En cas d'erreur de chargement, on démarre quand même avec ce qui a pu être chargé.
+buildCity().catch(console.error).then(() => {
+  renderer.compile(scene, camera); // prépare les shaders pour éviter la saccade de la 1re image
+  document.getElementById('loading').remove();
+  animate();
+});
