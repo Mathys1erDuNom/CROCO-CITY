@@ -1,7 +1,7 @@
 # Graph Report - ma-ville  (2026-11-11)
 
 ## Corpus Check
-- 17 files · ~12,025 words
+- 17 files · ~12,021 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 180 file(s) not represented in the graph (top: .glb 178, .graphify-bak 1, (none) 1)
 - WARNING: 180 of 203 files seen (89%) have no supported extractor and are missing from this graph entirely. It may look complete while representing only part of the codebase.
@@ -12,7 +12,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `d28bd6b8`
+- Built from commit: `763b7de7`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -50,8 +50,8 @@
   public/models/roads/Textures/colormap.png → public/models/cars/Textures/colormap.png
 - `Commercial Colormap Texture Atlas` --semantically_similar_to--> `Suburban Colormap Texture Atlas`  [INFERRED] [semantically similar]
   public/models/commercial/Textures/colormap.png → public/models/suburban/Textures/colormap.png
-- `chooseNext()` --calls--> `canMove()`  [EXTRACTED]
-  src/pedestrians.js → src/map.js
+- `buildCity()` --calls--> `drawRoads()`  [EXTRACTED]
+  src/main.js → src/roads.js
 
 ## Import Cycles
 - None detected.
