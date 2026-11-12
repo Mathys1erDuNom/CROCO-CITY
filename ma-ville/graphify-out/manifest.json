@@ -18,45 +18,45 @@
     "semantic_hash": "3d95f93865dd3077f0804000e9a57be9"
   },
   "src/collisions.js": {
-    "mtime": 1794336551.7493992,
-    "seen": 1794336573.766463,
-    "ast_hash": "a87895c661f92fd0ce6c6d2d4fe862c0",
+    "mtime": 1794482232.0021856,
+    "seen": 1794482306.24403,
+    "ast_hash": "b5607fe5d91c3348a02d0d41098e4c1d",
     "semantic_hash": ""
   },
   "src/config.js": {
-    "mtime": 1794337785.0029151,
-    "seen": 1794337788.0929852,
-    "ast_hash": "3738b48770b20655648c6594f23e430a",
+    "mtime": 1794512394.1735454,
+    "seen": 1794512460.8488488,
+    "ast_hash": "a287b46eca2904aa53623cb4729ebafc",
     "semantic_hash": ""
   },
   "src/effects.js": {
-    "mtime": 1794331973.527169,
-    "seen": 1794331978.827683,
-    "ast_hash": "75429047f592f8b90eb2c418b2c1865f",
+    "mtime": 1794481208.0787241,
+    "seen": 1794481215.3666382,
+    "ast_hash": "b3c41bcf194335e20c96c6cb7ed86705",
     "semantic_hash": ""
   },
   "src/loader.js": {
-    "mtime": 1794399963.1651826,
-    "seen": 1794399972.937669,
-    "ast_hash": "bbe4f99d2f4fbef51f73c13bf23b5eee",
+    "mtime": 1794428330.2056782,
+    "seen": 1794428336.934317,
+    "ast_hash": "2d891d3728b128ca3fb717d469a18eb9",
     "semantic_hash": ""
   },
   "src/main.js": {
-    "mtime": 1794400373.0295522,
-    "seen": 1794400379.189004,
-    "ast_hash": "5af3cd81f2a0abd693e88b2b91a5d502",
+    "mtime": 1794509010.638908,
+    "seen": 1794512460.848858,
+    "ast_hash": "2ebd3b51795104b591a6451d029b2249",
     "semantic_hash": ""
   },
   "src/map.js": {
-    "mtime": 1794334216.2421992,
-    "seen": 1794335231.600183,
-    "ast_hash": "ed35c0d7b360975ad6efe2d3be8e44e0",
+    "mtime": 1794427271.7616665,
+    "seen": 1794427726.979399,
+    "ast_hash": "66973df00fde6ffc87db7d401a850755",
     "semantic_hash": ""
   },
   "src/pedestrians.js": {
-    "mtime": 1794331973.5258434,
-    "seen": 1794331978.8276942,
-    "ast_hash": "5df31a422e2a867614ade1a264918093",
+    "mtime": 1794475844.5378168,
+    "seen": 1794475851.586373,
+    "ast_hash": "87d0d5cec91424f5b79b509acb061407",
     "semantic_hash": ""
   },
   "src/roads.js": {
@@ -66,15 +66,15 @@
     "semantic_hash": "5b2754affb9005f9b831fb6b5a90d9db"
   },
   "src/scene.js": {
-    "mtime": 1794308861.3068447,
-    "seen": 1794329456.0512471,
-    "ast_hash": "0651ad70487bb6372ff8223fbab9e55e",
-    "semantic_hash": "0651ad70487bb6372ff8223fbab9e55e"
+    "mtime": 1794485735.3741586,
+    "seen": 1794485740.475936,
+    "ast_hash": "6ec63ea8a6fe72ad90538472d4ebba48",
+    "semantic_hash": ""
   },
   "src/vehicles.js": {
-    "mtime": 1794340375.3613298,
-    "seen": 1794340398.770302,
-    "ast_hash": "39800a1865297da386f7c424d9eab204",
+    "mtime": 1794512394.174284,
+    "seen": 1794512460.848873,
+    "ast_hash": "97d6a423c268a3266861177e2f2437a2",
     "semantic_hash": ""
   },
   "vite.config.js": {
@@ -84,9 +84,9 @@
     "semantic_hash": "986da3be58d8fbaf2463df8ab1d12603"
   },
   "index.html": {
-    "mtime": 1794399520.4982765,
-    "seen": 1794399532.444097,
-    "ast_hash": "e25f4d1134dad494f03d73fa78a81c47",
+    "mtime": 1794485735.3745449,
+    "seen": 1794485740.47595,
+    "ast_hash": "2c3d390d92567b3838aa14ef4b6dd68f",
     "semantic_hash": ""
   },
   "public/models/cars/Textures/colormap.png": {
@@ -96,10 +96,10 @@
     "semantic_hash": "451b163d51d08b73f7d98244fef3f979"
   },
   "public/models/characters/Textures/colormap.png": {
-    "mtime": 1775135036.0,
-    "seen": 1794329456.051258,
-    "ast_hash": "451b163d51d08b73f7d98244fef3f979",
-    "semantic_hash": "451b163d51d08b73f7d98244fef3f979"
+    "mtime": 1794046474.0,
+    "seen": 1794485240.097922,
+    "ast_hash": "56707a94e7e244498653065d2ee1a365",
+    "semantic_hash": ""
   },
   "public/models/commercial/Textures/colormap.png": {
     "mtime": 1753118198.0,
@@ -135,6 +135,12 @@
     "mtime": 1794329885.0257688,
     "seen": 1794330419.9606771,
     "ast_hash": "67d88e9d0760c3ba54c75dfd9551c1c5",
+    "semantic_hash": ""
+  },
+  "public/models/weapons/Textures/colormap.png": {
+    "mtime": 1775135036.0,
+    "seen": 1794475851.586412,
+    "ast_hash": "451b163d51d08b73f7d98244fef3f979",
     "semantic_hash": ""
   },
   "package-lock.json": {

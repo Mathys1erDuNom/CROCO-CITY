@@ -1,8 +1,10 @@
 {
   "2": "collisions.js",
-  "4": "pedestrians.js",
+  "3": "map.js",
+  "4": "config.js",
   "6": "updatePedestrians",
   "7": "effects.js",
   "9": "CLAUDE.md",
-  "10": ".claude/CLAUDE.md"
+  "10": ".claude/CLAUDE.md",
+  "11": "vehicles.js"
 }

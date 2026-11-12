@@ -88,6 +88,8 @@ export function hitCars(a, b) {
   const pa = a.model.position;
   const pb = b.model.position;
   if (!sameLevel(pa, pb)) return; // l'une sur le pont, l'autre en bas : elles ne se touchent pas
+  // Ambulance garée sur le bord (chez elle ou en intervention) : les autres la frôlent sans la toucher
+  if (a.parked || b.parked) return;
 
   // Les deux cercles les plus proches (un de chaque voiture) donnent le point de choc
   let distance = Infinity, dx = 0, dz = 0;

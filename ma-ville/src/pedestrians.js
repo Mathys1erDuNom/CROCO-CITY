@@ -1,11 +1,14 @@
+import * as THREE from 'three';
 import {
   TILE_SIZE, PED_RADIUS, PED_SPEED,
   LAUNCH_FACTOR, LAUNCH_UP, GRAVITY, BRIDGE_HEIGHT,
   FIGHTER_SPEED, FIGHTER_SIGHT, FIGHTER_CHARGE, PUNCH_RANGE, PUNCH_POWER, PUNCH_UP, PUNCH_COOLDOWN,
+  POLICE_SIGHT, POLICE_SPEED, POLICE_RANGE, SHOT_COOLDOWN, SHOT_POWER, SHOT_UP,
   FLOAT_SINK, CROC_SWIM_DEPTH, FLOAT_BOB, CROC_DRAG_SPEED, CROC_SWIM_BOOST, CROC_MOUTH, DROWN_TIME, DROWN_DEPTH, SPLASH_RATE,
 } from './config.js';
 import { placeModel } from './city.js';
-import { emitSplash } from './effects.js';
+import { loadModel } from './loader.js';
+import { emitSplash, emitShot } from './effects.js';
 import { MAP, isRoad, isGrass, isFree, isWater, isBeach, isWaterAt, canMove, heightAt, DIRECTIONS } from './map.js';
 
 // Comportements : où le piéton a le droit de marcher
@@ -14,6 +17,7 @@ const PED_STYLES = {
   calm: isGrass,      // le calme : évite les routes, reste dans l'herbe
   distracted: isFree, // pas attentif : marche partout
   fighter: isFree,    // le combattant : marche partout et va taper les autres
+  police: isFree,     // le policier : marche partout et tire sur ceux qui ont frappé quelqu'un
   crocodile: (col, row) => isWater(col, row) || isBeach(col, row), // reste dans l'eau et sur la plage, attrape ceux qui passent
 };
 
@@ -30,6 +34,7 @@ const ROAD_SPREAD = TILE_SIZE * 0.25;
 //  - name  : fichier sans .glb (ex : 'character-a')
 //  - style : 'crazy' (sur la route), 'calm' (évite les routes), 'distracted' (partout)
 //            'fighter' (cherche les autres piétons pour les taper)
+//            'police' (pistolet à la main, poursuit et abat ceux qui ont frappé quelqu'un)
 //            ou 'crocodile' (attrape ceux qui passent et les emmène au fond de l'eau)
 export async function addPedestrian(scene, pack, name, col, row, style = 'crazy') {
   const canWalk = PED_STYLES[style];
@@ -41,9 +46,28 @@ export async function addPedestrian(scene, pack, name, col, row, style = 'crazy'
   // Ordre 'YXZ' : quand il tombe, il bascule dans le sens où il regarde
   model.rotation.order = 'YXZ';
 
+  // Policier : le bras droit est tendu vers l'avant, le pistolet au bout
+  let gun = null;
+  if (style === 'police') {
+    gun = await loadModel('weapons', 'weapon-shooter');
+    const arm = model.getObjectByName('arm-right');
+    // shortcut: réglé sur les personnages Kenney (bras à l'horizontale, long de 0.27) ; à ajuster pour un autre pack
+    if (arm) {
+      arm.rotation.y = Math.PI / 2;   // le bras pointe devant au lieu de sur le côté
+      gun.position.set(-0.27, 0, 0);  // au bout du bras = la main
+      gun.rotation.y = -Math.PI / 2;  // le canon regarde devant
+    } else {
+      gun.position.set(-0.15, 0.3, 0.15); // modèle sans bras : posé à côté de lui
+    }
+    gun.scale.setScalar(0.5);
+    (arm ?? model).add(gun);
+  }
+
   const ped = {
     model, pack, name, col, row, canWalk,
-    fighter: style === 'fighter' || style === 'crocodile', punchCooldown: 0, charging: false,
+    fighter: style === 'fighter' || style === 'crocodile' || style === 'police', punchCooldown: 0, charging: false,
+    police: style === 'police', gun,
+    wanted: false, // a frappé quelqu'un : les policiers le recherchent
     sink: style === 'crocodile' ? CROC_SWIM_DEPTH : FLOAT_SINK, // enfoncement dans l'eau
     phase: Math.random() * 10, // décalage des vagues : ils ne flottent pas tous pareil
     croc: style === 'crocodile', victim: null, lair: null, drownTimer: 0, // proie dans la gueule, case d'eau visée
@@ -142,12 +166,13 @@ function floorY(ped) {
 function findPrey(fighter) {
   const p = fighter.model.position;
   let prey = null;
-  let best = FIGHTER_SIGHT;
+  let best = fighter.police ? POLICE_SIGHT : FIGHTER_SIGHT;
   for (const other of pedestrians) {
     // Le crocodile prend aussi les corps au sol ; le combattant ne tape que ceux debout
     const target = other.state === 'walking' || (fighter.croc && other.state === 'down');
     if (other === fighter || !target) continue;
     if (!fighter.croc && other.croc) continue; // les combattants n'osent pas taper un crocodile
+    if (fighter.police && !other.wanted) continue; // le policier ne vise que les criminels
     const o = other.model.position;
     if (Math.abs(o.y - p.y) > BRIDGE_HEIGHT * 0.6) continue; // sur le pont alors qu'il est en bas
     const distance = Math.hypot(o.x - p.x, o.z - p.z);
@@ -165,15 +190,25 @@ function charge(ped, delta) {
   const dx = prey.model.position.x - pos.x;
   const dz = prey.model.position.z - pos.z;
   const distance = Math.hypot(dx, dz);
-  if (distance > FIGHTER_CHARGE) return false;
+  if (distance > (ped.police ? POLICE_RANGE : FIGHTER_CHARGE)) return false;
 
   ped.model.rotation.y = Math.atan2(dx, dz) + HEADING_OFFSET;
-  if (distance < PED_RADIUS * 2 + PUNCH_RANGE) {
+  if (ped.police) {
+    // À portée : il reste sur place et tire. La cible tombe, projetée dans le sens de la balle.
+    // shortcut: il tire à travers les bâtiments ; ajouter un test de ligne de vue si ça se voit trop
+    if (ped.punchCooldown <= 0 && distance > 0) {
+      const muzzle = ped.gun.getWorldPosition(new THREE.Vector3());
+      emitShot(ped.model.parent, muzzle, { x: prey.model.position.x, y: muzzle.y, z: prey.model.position.z });
+      launchPedestrian(prey, dx / distance, dz / distance, SHOT_POWER, SHOT_UP);
+      ped.punchCooldown = SHOT_COOLDOWN;
+    }
+  } else if (distance < PED_RADIUS * 2 + PUNCH_RANGE) {
     if (ped.croc) {
       grab(ped, prey);
     } else if (ped.punchCooldown <= 0 && distance > 0) {
       // Coup de poing : la cible est projetée dans la direction du coup
       launchPedestrian(prey, dx / distance, dz / distance, PUNCH_POWER, PUNCH_UP);
+      ped.wanted = true; // crime : les policiers qui le voient vont le poursuivre
       ped.punchCooldown = PUNCH_COOLDOWN;
     }
   } else {
@@ -308,7 +343,9 @@ export function updatePedestrians(delta) {
       const dx = targetX - pos.x;
       const dz = targetZ - pos.z;
       const distance = Math.hypot(dx, dz);
-      const step = speedOf(ped, ped.fighter ? FIGHTER_SPEED : PED_SPEED) * delta;
+      // Le policier patrouille au pas, et court dès qu'il a un criminel en vue
+      const walkSpeed = ped.police ? (findPrey(ped) ? POLICE_SPEED : PED_SPEED) : ped.fighter ? FIGHTER_SPEED : PED_SPEED;
+      const step = speedOf(ped, walkSpeed) * delta;
 
       if (distance <= step) {
         pos.x = targetX;

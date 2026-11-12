@@ -20,7 +20,14 @@ import {
   FLAME_RATE,
   BRIDGE_HEIGHT,
   RING_RADIUS,
+  MEDIC_MODEL,
+  MEDIC_SPEED,
+  MEDIC_CARRY_HEIGHT,
+  TOW_REACH,
+  TOW_MODEL,
+  PARK_LANE,
 } from './config.js';
+import { pedestrians } from './pedestrians.js';
 import { MAP, isRoad, isWaterAt, canMove, heightAt, DIRECTIONS, ROUNDABOUTS, inRoundabout } from './map.js';
 
 // Branche de rond-point = case juste à côté d'un centre (seules cases du rond-point où l'on roule en ligne droite)
@@ -31,7 +38,9 @@ const canDriveTo = (col, row) => isRoad(col, row) && (!inRoundabout(col, row) ||
 // Exportée pour que collisions.js puisse parcourir les voitures
 export const vehicles = [];
 
-// style : 'calm' (calme), 'fast' (rapide et nerveuse) ou 'drunk' (zigzague)
+// style : 'calm' (calme), 'fast' (rapide et nerveuse), 'drunk' (zigzague)
+//         'ambulance' (attend à sa case de départ, va chercher les piétons morts, puis revient)
+//         ou 'tow' (dépanneuse : pareil, mais elle enlève les voitures en feu)
 export async function addVehicle(scene, pack, name, col, row, style = 'calm') {
   const settings = DRIVING_STYLES[style];
   if (!settings) throw new Error(`Style de conduite inconnu : "${style}" (choix : ${Object.keys(DRIVING_STYLES)})`);
@@ -45,7 +54,7 @@ export async function addVehicle(scene, pack, name, col, row, style = 'calm') {
   model.rotation.order = 'YXZ'; // tourne (y), puis penche avant/arrière (x) et sur le côté (z)
 
   const car = {
-    model, col, row, width, length,
+    model, name, col, row, width, length,
     nextCol: col, nextRow: row,
     dir: null, style: settings, speed: settings.speed, waitTime: 0, yieldTime: 0,
     queued: false, // ralentie ou arrêtée par une autre voiture (file, priorité) : on ne la double pas
@@ -66,17 +75,262 @@ export async function addVehicle(scene, pack, name, col, row, style = 'calm') {
     onFire: false,    // en feu : arrêtée pour toujours
     smokeCount: 0, flameCount: 0, // bouffées "en attente" d'être émises
     fireLight: null,
+    // --- ambulance ---
+    home: { col, row }, // case de départ, où elle revient se garer
+    mission: null,      // { ped, goal, phase, carrying } : le corps à ramasser et la case de route où s'arrêter
+    parked: false,
+    medic: null, medicY: 0, // l'ambulancier (caché tant qu'il est dans l'ambulance) et sa hauteur de pose
   };
+  if (settings.rescue) {
+    // Le personnage qui descend de la voiture : ambulancier ou dépanneur
+    car.medic = await placeModel(scene, 'characters', settings.rescue === 'body' ? MEDIC_MODEL : TOW_MODEL, col, row);
+    car.medicY = car.medic.position.y;
+    car.medic.visible = false;
+  }
   chooseNext(car);
   vehicles.push(car);
 }
 
-// La voiture choisit sa prochaine case au hasard (sans demi-tour si possible)
+// --- Ambulance ---
+const cellKey = (col, row) => `${col},${row}`;
+const atCell = (car, cell) => car.col === cell.col && car.row === cell.row;
+// Là où l'ambulance doit aller : près du corps si elle en a un à ramasser, sinon chez elle
+const rescueGoal = (car) => car.mission?.goal ?? car.home;
+
+// Nombre de cases de route à parcourir depuis chaque case jusqu'à (col, row). Les cases non reliées sont absentes.
+function roadDistances(col, row) {
+  const dist = new Map([[cellKey(col, row), 0]]);
+  const queue = [{ col, row }];
+  for (const cell of queue) { // la file grandit pendant qu'on la parcourt : on s'éloigne case par case
+    for (const d of DIRECTIONS) {
+      const c = cell.col + d.dc;
+      const r = cell.row + d.dr;
+      if (dist.has(cellKey(c, r)) || !isRoad(c, r) || !canMove(cell.col, cell.row, d)) continue;
+      dist.set(cellKey(c, r), dist.get(cellKey(cell.col, cell.row)) + 1);
+      queue.push({ col: c, row: r });
+    }
+  }
+  return dist;
+}
+
+// Case de route la plus proche du point (x, z) où l'ambulance peut s'arrêter : une ligne droite si possible
+// (arrêtée dans un virage ou un carrefour, elle est sur la trajectoire de ceux qui tournent)
+function nearestRoad(x, z) {
+  let best = null;
+  let bestDistance = Infinity;
+  MAP.forEach((line, row) => line.forEach((_, col) => {
+    if (!canDriveTo(col, row)) return;
+    const distance = Math.hypot(col * TILE_SIZE - x, row * TILE_SIZE - z) + (isTurnCell(col, row) ? 1000 : 0);
+    if (distance < bestDistance) { bestDistance = distance; best = { col, row }; }
+  }));
+  return best;
+}
+
+// Appelée à chaque image pour une ambulance qui roule : elle se trouve un corps à ramasser,
+// et envoie son ambulancier le chercher une fois arrivée. Renvoie true si elle doit rester à l'arrêt (il est dehors).
+function updateRescue(car, delta) {
+  const wasParked = car.parked;
+  const stopped = rescueStep(car, delta);
+  // Elle quitte le bord alors qu'une voiture la frôle peut-être encore : pas d'accident le temps de se dégager
+  if (wasParked && !car.parked) car.immunity = CRASH_IMMUNITY;
+  return stopped;
+}
+
+function rescueStep(car, delta) {
+  if (car.style.rescue === 'wreck') return towStep(car, delta);
+  // Le corps n'est plus là (un crocodile l'a pris...) : mission annulée, ou l'ambulancier déjà sorti rentre les mains vides
+  const lost = car.mission && !car.mission.carrying && car.mission.ped.state !== 'down';
+  if (lost && car.mission.phase) car.mission.phase = 'back';
+  else if (lost) car.mission = null;
+
+  if (!car.mission) {
+    // Le mort le plus proche dont aucune autre ambulance en état de rouler ne s'occupe
+    const pos = car.model.position;
+    let body = null;
+    let best = Infinity;
+    for (const ped of pedestrians) {
+      if (ped.state !== 'down' || ped.noRescue) continue;
+      const r = ped.rescuer;
+      if (r && r !== car && r.mission?.ped === ped && !r.onFire && !r.sinking) continue;
+      const distance = Math.hypot(ped.model.position.x - pos.x, ped.model.position.z - pos.z);
+      if (distance < best) { best = distance; body = ped; }
+    }
+    const goal = body && nearestRoad(body.model.position.x, body.model.position.z);
+    if (goal) {
+      body.rescuer = car;
+      car.mission = { ped: body, goal, phase: null, carrying: false };
+    }
+  }
+
+  car.parked = !car.mission && atCell(car, car.home) && car.nextCol === car.col && car.nextRow === car.row;
+  if (!car.mission || !atCell(car, car.mission.goal)) return false;
+
+  // Arrivée à la route la plus proche du corps : elle reste à l'arrêt pendant que l'ambulancier fait l'aller-retour
+  car.parked = true; // rangée sur le bord : les autres voitures passent à côté
+  const m = car.mission;
+  const back = fetchOnFoot(car, delta, m.ped.model, TILE_SIZE * 0.1,
+    () => {
+      if (m.ped.state !== 'down') return false; // un crocodile l'a pris entre-temps
+      m.ped.state = 'grabbed'; // pedestrians.js ne le déplace plus, le crocodile ne peut plus le prendre
+      m.ped.vx = m.ped.vz = 0;
+      return true;
+    },
+    // Le corps est porté au-dessus de lui
+    (pos, angle) => {
+      m.ped.model.position.set(pos.x, pos.y + MEDIC_CARRY_HEIGHT, pos.z);
+      m.ped.model.rotation.y = angle;
+    });
+  if (!back) return true;
+
+  // De retour à l'ambulance : l'ambulancier et le corps disparaissent, elle peut repartir
+  if (m.carrying) {
+    m.ped.model.removeFromParent();
+    m.ped.state = 'gone'; // pedestrians.js le retire de sa liste
+  }
+  car.mission = null;
+  car.parked = false;
+  return false;
+}
+
+// Le personnage de la voiture (ambulancier ou dépanneur) descend, marche jusqu'à "model", le prend et le ramène.
+//  - reach : distance à laquelle il s'arrête devant
+//  - take() : appelée quand il y arrive ; renvoie false s'il n'y a plus rien à prendre (il rentre les mains vides)
+//  - hold(pos, angle) : appelée à chaque image du retour, pour placer ce qu'il ramène (pos et angle = les siens)
+// Renvoie true quand il est remonté dans la voiture.
+// shortcut: il marche tout droit (à travers bâtiments et clôtures) et rien ne peut le toucher ;
+// en faire un vrai piéton s'il doit contourner les obstacles ou se faire renverser
+function fetchOnFoot(car, delta, model, reach, take, hold) {
+  const m = car.mission;
+  const helper = car.medic;
+  const from = car.model.position;
+  const pos = helper.position;
+  if (!m.phase) {
+    m.phase = 'out'; // 'out' : il y va ; 'back' : il revient à la voiture
+    helper.visible = true;
+    pos.set(from.x, 0, from.z);
+  }
+
+  const target = m.phase === 'out' ? model.position : from;
+  const dx = target.x - pos.x;
+  const dz = target.z - pos.z;
+  const distance = Math.hypot(dx, dz);
+  const step = MEDIC_SPEED * delta;
+  const arrived = distance - (m.phase === 'out' ? reach : 0) <= step;
+  if (!arrived) {
+    pos.x += (dx / distance) * step;
+    pos.z += (dz / distance) * step;
+    helper.rotation.y = Math.atan2(dx, dz);
+  }
+  pos.y = car.medicY + heightAt(pos.x, pos.z);
+  if (m.carrying) hold(pos, helper.rotation.y);
+
+  if (arrived && m.phase === 'out') {
+    m.phase = 'back';
+    m.carrying = take();
+    return false;
+  }
+  if (!arrived) return false;
+  helper.visible = false;
+  return true;
+}
+
+// Dépanneuse : elle se trouve une voiture en feu et s'arrête juste à côté. Son dépanneur descend,
+// va jusqu'à l'épave et la tire jusqu'à la dépanneuse, où les deux disparaissent.
+// Renvoie true si elle doit rester à l'arrêt (il est dehors).
+function towStep(car, delta) {
+  // L'épave n'est plus là (tombée à l'eau, qui éteint le feu) : mission annulée, ou le dépanneur déjà sorti rentre les mains vides
+  const lost = car.mission && !car.mission.carrying && (car.mission.wreck.gone || !car.mission.wreck.onFire);
+  if (lost && car.mission.phase) car.mission.phase = 'back';
+  else if (lost) car.mission = null;
+
+  const pos = car.model.position;
+  const gap = (wreck) => Math.hypot(wreck.model.position.x - pos.x, wreck.model.position.z - pos.z);
+  if (!car.mission) {
+    // La voiture en feu la plus proche dont aucune autre dépanneuse en état de rouler ne s'occupe
+    let wreck = null;
+    for (const other of vehicles) {
+      if (other === car || !other.onFire || other.gone || other.noRescue) continue;
+      const t = other.tower;
+      if (t && t !== car && t.mission?.wreck === other && !t.onFire && !t.sinking) continue;
+      if (!wreck || gap(other) < gap(wreck)) wreck = other;
+    }
+    const goal = wreck && nearestRoad(wreck.model.position.x, wreck.model.position.z);
+    if (goal) {
+      wreck.tower = car;
+      car.mission = { wreck, goal, phase: null, carrying: false };
+    }
+  }
+
+  car.parked = !car.mission && atCell(car, car.home) && car.nextCol === car.col && car.nextRow === car.row;
+  // Elle s'arrête avant de toucher l'épave (ou sur la route la plus proche, si l'épave a fini dans l'herbe),
+  // et ne bouge plus tant que le dépanneur est dehors
+  const m = car.mission;
+  if (!m || !(m.phase || atCell(car, m.goal) || gap(m.wreck) < TOW_REACH)) return false;
+
+  car.parked = true; // rangée sur le bord : les autres voitures passent à côté
+  const wreck = m.wreck;
+  const behind = wreck.length / 2 + TILE_SIZE * 0.1; // distance entre le dépanneur et le milieu de l'épave
+  const back = fetchOnFoot(car, delta, wreck.model, behind,
+    () => wreck.onFire && !wreck.gone,
+    // L'épave est tirée derrière lui, le nez dans le sens de la marche
+    (pos, angle) => {
+      wreck.model.position.x = pos.x - Math.sin(angle) * behind;
+      wreck.model.position.z = pos.z - Math.cos(angle) * behind;
+      wreck.model.rotation.y = angle + CAR_HEADING_OFFSET;
+      wreck.vx = wreck.vz = wreck.spin = 0; // elle ne glisse plus toute seule
+    });
+  if (!back) return true;
+
+  // De retour à la dépanneuse : le dépanneur et l'épave disparaissent, elle peut repartir
+  if (m.carrying) {
+    wreck.model.removeFromParent(); // sa lueur de feu part avec elle
+    wreck.gone = true;              // updateVehicles la retire de la liste
+  }
+  car.mission = null;
+  car.parked = false;
+  return false;
+}
+
+// Ambulance ou dépanneuse en feu ou tombée à l'eau en pleine intervention : mission abandonnée
+// (le personnage disparaît et lâche ce qu'il ramenait ; l'épave reste où elle est)
+function abortRescue(car) {
+  if (car.mission.carrying && car.mission.ped) car.mission.ped.state = 'down';
+  if (car.medic) car.medic.visible = false;
+  car.mission = null;
+  car.parked = false;
+}
+
+// La voiture choisit sa prochaine case au hasard (sans demi-tour si possible).
+// L'ambulance, elle, prend la case qui la rapproche de son but.
 function chooseNext(car) {
   // Route voisine ET raccordée à la même hauteur (on ne monte sur un pont que par sa rampe)
   let options = DIRECTIONS.filter((d) => canMove(car.col, car.row, d) && canDriveTo(car.col + d.dc, car.row + d.dr));
 
-  if (car.dir) {
+  if (car.style.rescue) {
+    const goal = rescueGoal(car);
+    if (atCell(car, goal)) {
+      // Arrivée : elle reste sur sa case (à la création, elle se tourne juste dans le sens de la route)
+      car.nextCol = car.col;
+      car.nextRow = car.row;
+      if (!car.dir && options.length > 0) {
+        car.dir = options[0];
+        car.heading = Math.atan2(car.dir.dc, car.dir.dr) + CAR_HEADING_OFFSET;
+      }
+      return;
+    }
+    const dist = roadDistances(goal.col, goal.row);
+    const left = (d) => dist.get(cellKey(car.col + d.dc, car.row + d.dr)) ?? Infinity;
+    // Pas de demi-tour sur place (elle se retrouverait face aux autres) : elle fait le tour, sauf dans un cul-de-sac
+    const ahead = options.filter((d) => !(car.dir && d.dc === -car.dir.dc && d.dr === -car.dir.dr));
+    if (ahead.some((d) => left(d) < Infinity)) options = ahead;
+    if (options.length > 0) options = [options.reduce((best, d) => (left(d) < left(best) ? d : best))];
+    // Aucune route n'y mène : elle abandonne ce corps
+    if (car.mission && options.length > 0 && left(options[0]) === Infinity) {
+      (car.mission.ped ?? car.mission.wreck).noRescue = true;
+      car.mission = null;
+      return;
+    }
+  } else if (car.dir) {
     const withoutUTurn = options.filter(
       (d) => !(d.dc === -car.dir.dc && d.dr === -car.dir.dr)
     );
@@ -99,6 +353,21 @@ function enterRoundabout(car) {
   const d = car.dir;
   const rb = d && ROUNDABOUTS.find((r) => r.col === car.col + d.dc && r.row === car.row + d.dr);
   if (!rb) return false;
+  if (car.style.rescue) {
+    if (atCell(car, rescueGoal(car))) return false; // arrivée sur cette branche : elle s'y arrête
+    // Ambulance : elle sort par la branche la plus proche de son but (y compris celle d'où elle vient)
+    const goal = rescueGoal(car);
+    const dist = roadDistances(goal.col, goal.row);
+    const left = (e) => dist.get(cellKey(rb.col + e.dc, rb.row + e.dr)) ?? Infinity;
+    const exit = DIRECTIONS.filter((e) => canMove(rb.col + e.dc, rb.row + e.dr, e) && isRoad(rb.col + 2 * e.dc, rb.row + 2 * e.dr))
+      .reduce((best, e) => (!best || left(e) < left(best) ? e : best), null);
+    if (exit) {
+      const TAU = Math.PI * 2;
+      const from = Math.atan2(-d.dr, -d.dc);
+      car.ring = { rb, exit, angle: from, left: (((from - Math.atan2(exit.dr, exit.dc)) % TAU) + TAU) % TAU || TAU };
+      return true;
+    }
+  }
   // Sorties possibles : branche dont la route continue vers l'extérieur
   let exits = DIRECTIONS.filter((e) =>
     !(e.dc === -d.dc && e.dr === -d.dr) &&
@@ -152,6 +421,8 @@ function isBlocked(car) {
 
   for (const other of vehicles) {
     if (other === car || other === car.overtaking) continue; // celle qu'on double ne gêne plus
+    // Ambulance garée sur le bord : on passe à côté (seulement une fois qu'elle s'est vraiment rangée)
+    if (other.parked && other.state === 'driving' && Math.hypot(other.offX, other.offZ) > PARK_LANE * 0.8) continue;
     // Les voitures en sens inverse ne sont PAS évitées : elles vont se percuter
     if (other.dir && other.dir.dc === -car.dir.dc && other.dir.dr === -car.dir.dr) continue;
 
@@ -422,7 +693,9 @@ function sinkCar(car, delta) {
 
 export function updateVehicles(delta) {
   for (const car of vehicles) {
+    if (car.gone) continue; // épave enlevée par une dépanneuse pendant cette image
     const p = car.model.position;
+    if (car.mission && (car.onFire || car.sinking)) abortRescue(car);
     if (car.sinking || (isWaterAt(p.x, p.z) && p.y < car.baseY + 0.1)) {
       sinkCar(car, delta);
       continue;
@@ -435,6 +708,23 @@ export function updateVehicles(delta) {
     // Voiture accidentée : on gère l'accident et on passe à la suivante
     if (car.state === 'crashed') {
       updateCrash(car, delta);
+      continue;
+    }
+
+    // Ambulance dont l'ambulancier est dehors : à l'arrêt
+    if (car.style.rescue && updateRescue(car, delta)) {
+      car.vx = car.vz = 0;
+      // Elle se serre sur le bord de la route, sinon les autres lui rentrent dedans
+      if (car.dir) {
+        const smooth = Math.min(1, delta * 8);
+        const pos = car.model.position;
+        pos.x -= car.offX;
+        pos.z -= car.offZ;
+        car.offX += (-car.dir.dr * PARK_LANE - car.offX) * smooth;
+        car.offZ += (car.dir.dc * PARK_LANE - car.offZ) * smooth;
+        pos.x += car.offX;
+        pos.z += car.offZ;
+      }
       continue;
     }
 
@@ -525,7 +815,7 @@ export function updateVehicles(delta) {
     if (forward) {
       const [fx, fz] = forward;
       const wave = sway > 0 ? Math.sin(car.time * 2.5) + 0.5 * Math.sin(car.time * 4.1) : 0;
-      const side = (car.overtaking ? -OVERTAKE_LANE : lane) + wave * sway; // en dépassement : voie de gauche
+      const side = car.parked ? PARK_LANE : (car.overtaking ? -OVERTAKE_LANE : lane) + wave * sway; // en dépassement : voie de gauche
       // On glisse vers l'écart voulu au lieu de sauter : changement de voie en douceur dans les virages
       const smooth = Math.min(1, delta * 8);
       car.offX += (-fz * side - car.offX) * smooth;
@@ -546,5 +836,10 @@ export function updateVehicles(delta) {
       car.vx = (pos.x - startX) / delta;
       car.vz = (pos.z - startZ) / delta;
     }
+  }
+
+  // Les épaves enlevées sont retirées de la liste (après la boucle, pour ne pas la casser en cours de route)
+  for (let i = vehicles.length - 1; i >= 0; i--) {
+    if (vehicles[i].gone) vehicles.splice(i, 1);
   }
 }

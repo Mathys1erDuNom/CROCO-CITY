@@ -12,10 +12,32 @@
         display: grid; place-items: center;
         background: #1d2b1f; color: #fff; font: 24px sans-serif;
       }
+      /* Boutons de caméra, en bas à gauche par-dessus la ville */
+      #cameras {
+        position: fixed; left: 12px; bottom: 12px; z-index: 5;
+        display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+        font: 14px sans-serif;
+      }
+      #cameras button, #cameras select {
+        padding: 8px 12px; border: 2px solid transparent; border-radius: 6px;
+        background: #1d2b1f; color: #fff; font: inherit; cursor: pointer;
+      }
+      #cameras button[aria-pressed="true"] { background: #fff; color: #1d2b1f; border-color: #1d2b1f; }
+      #cameras button:disabled { opacity: 0.5; cursor: not-allowed; }
+      #cameras select.active { background: #fff; color: #1d2b1f; border-color: #1d2b1f; }
+      #cameras button:focus-visible, #cameras select:focus-visible { outline: 3px solid #ffd54a; outline-offset: 2px; }
+      #camera-target { padding: 6px 10px; border-radius: 6px; background: rgba(29, 43, 31, 0.85); color: #fff; }
     </style>
   </head>
   <body>
     <div id="loading" role="status">Chargement de la ville…</div>
+    <div id="cameras" role="group" aria-label="Caméra">
+      <button type="button" id="camera-free" aria-pressed="true">Caméra libre</button>
+      <select id="camera-ped" aria-label="Suivre un personnage"></select>
+      <select id="camera-car" aria-label="Suivre une voiture"></select>
+      <button type="button" id="camera-eyes" aria-pressed="false" disabled>Vue embarquée</button>
+      <span id="camera-target" role="status">Vue libre</span>
+    </div>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

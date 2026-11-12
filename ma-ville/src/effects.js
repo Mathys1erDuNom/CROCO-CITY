@@ -59,6 +59,38 @@ export function emitSplash(scene, pos) {
   });
 }
 
+// Coup de feu : éclair et fumée au bout du pistolet, trait lumineux jusqu'à la cible, étincelles à l'impact
+const SHOT = new THREE.Color(0xffe066);
+const SPARK = new THREE.Color(0xff9933);
+const beams = []; // traits lumineux en cours : { mesh, life }
+const BEAM_LIFE = 0.12;
+const BEAM_WIDTH = 0.035;
+const beamGeometry = new THREE.CylinderGeometry(1, 1, 1, 6, 1, true).rotateX(Math.PI / 2); // couché : sa longueur suit l'axe z
+export function emitShot(scene, from, to) {
+  const start = new THREE.Vector3(from.x, from.y, from.z);
+  const end = new THREE.Vector3(to.x, to.y, to.z);
+
+  // Le trait : un tube fin et brillant, qui s'affine et s'efface en une fraction de seconde
+  const mesh = new THREE.Mesh(beamGeometry, new THREE.MeshBasicMaterial({
+    color: 0xfff2a8, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false,
+  }));
+  mesh.position.copy(start).lerp(end, 0.5);
+  mesh.lookAt(end);
+  mesh.scale.set(BEAM_WIDTH, BEAM_WIDTH, start.distanceTo(end));
+  scene.add(mesh);
+  beams.push({ mesh, life: BEAM_LIFE });
+
+  // Au canon : un éclair bref, puis une petite bouffée de fumée
+  emit(scene, from, { color: SHOT, size: 0.7, grow: -7, life: 0.1, rise: 0, spread: 0, opacity: 1, glow: true });
+  emit(scene, from, { color: LIGHT_SMOKE, size: 0.12, grow: 2, life: 0.6, rise: 0.5, spread: 0.2, opacity: 0.5 });
+
+  // À l'impact : un flash et des étincelles qui giclent
+  emit(scene, to, { color: SHOT, size: 0.45, grow: -6, life: 0.12, rise: 0, spread: 0, opacity: 1, glow: true });
+  for (let i = 0; i < 8; i++) {
+    emit(scene, to, { color: SPARK, size: 0.09, grow: -2, life: 0.2 + Math.random() * 0.25, rise: 1.5, spread: 3.5, opacity: 1, glow: true });
+  }
+}
+
 export function emitFlame(scene, pos) {
   emit(scene, pos, {
     color: new THREE.Color().setHSL(0.02 + Math.random() * 0.08, 1, 0.55), // rouge à orange
@@ -68,6 +100,20 @@ export function emitFlame(scene, pos) {
 }
 
 export function updateEffects(delta) {
+  for (let i = beams.length - 1; i >= 0; i--) {
+    const beam = beams[i];
+    beam.life -= delta;
+    if (beam.life <= 0) {
+      beam.mesh.removeFromParent();
+      beam.mesh.material.dispose();
+      beams.splice(i, 1);
+      continue;
+    }
+    const k = beam.life / BEAM_LIFE; // 1 au départ, 0 à la fin
+    beam.mesh.material.opacity = k;
+    beam.mesh.scale.x = beam.mesh.scale.y = BEAM_WIDTH * k;
+  }
+
   for (let i = particles.length - 1; i >= 0; i--) {
     const p = particles[i];
     p.life -= delta;

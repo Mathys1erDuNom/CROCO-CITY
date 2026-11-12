@@ -44,8 +44,26 @@ export const SAFE_WIDTH = TILE_SIZE * 0.3;
 export const DRIVING_STYLES = {
   calm:  { lane: TILE_SIZE * 0.15, speed: 2,   safeDistance: TILE_SIZE * 2,  maxWait: 5,   sway: 0,                swayAngle: 0,   speedSway: 0,   overtake: true,  yield: true },
   fast:  { lane: TILE_SIZE * 0.15, speed: 5,   safeDistance: TILE_SIZE * 0.9, maxWait: 2, sway: 0,                swayAngle: 0,   speedSway: 0.2, overtake: true,  yield: true },
+  // rescue 'body' : au lieu de rouler au hasard, elle va chercher les piétons morts puis rentre à sa case de départ
+  ambulance: { lane: TILE_SIZE * 0.15, speed: 4, safeDistance: TILE_SIZE * 0.9, maxWait: 2, sway: 0,               swayAngle: 0,   speedSway: 0,   overtake: true,  yield: true, rescue: 'body' },
+  // rescue 'wreck' : la dépanneuse, pareil mais pour les voitures en feu
+  tow:       { lane: TILE_SIZE * 0.15, speed: 3, safeDistance: TILE_SIZE * 0.9, maxWait: 2, sway: 0,               swayAngle: 0,   speedSway: 0,   overtake: true,  yield: true, rescue: 'wreck' },
   drunk: { lane: 0,                speed: 2.5, safeDistance: TILE_SIZE * 0.3,  maxWait: 1,   sway: TILE_SIZE * 0.18, swayAngle: 0.4, speedSway: 0.5, overtake: false, yield: false },
 };
+
+// --- Ambulance (style 'ambulance') ---
+// À l'arrêt près du corps, un ambulancier descend, va le chercher à pied et le ramène à l'ambulance
+export const MEDIC_MODEL = 'character-female-e';  // personnage utilisé (dossier characters)
+export const MEDIC_SPEED = TILE_SIZE * 0.8;     // vitesse de l'ambulancier (un piéton marche à 0.4)
+export const MEDIC_CARRY_HEIGHT = 0.3;          // hauteur à laquelle il porte le corps
+// Garée (chez elle, ou pendant que l'ambulancier est dehors) : serrée sur le bord, les autres passent.
+// Pas plus de 0.38 : au-delà, elle touche les bâtiments collés à la route
+export const PARK_LANE = TILE_SIZE * 0.38;
+
+// --- Dépanneuse (style 'tow') ---
+export const TOW_REACH = TILE_SIZE;             // elle s'arrête à cette distance de l'épave (avant de la toucher)
+// À l'arrêt près de l'épave, un dépanneur descend, va la chercher à pied et la tire jusqu'à la dépanneuse
+export const TOW_MODEL = 'character-worker';    // personnage utilisé (dossier characters). Il marche à MEDIC_SPEED
 
 // --- Priorité dans les virages et carrefours ---
 export const YIELD_MAX_WAIT = 4;                // après ce temps à attendre l'entrée (secondes), elle y va quand même
@@ -89,6 +107,14 @@ export const PUNCH_RANGE = TILE_SIZE * 0.2;    // portée du coup (en plus de la
 export const PUNCH_POWER = 1.5;                // force du coup (une voiture "fast" = 5)
 export const PUNCH_UP = 1;                     // un coup soulève moins qu'une voiture
 export const PUNCH_COOLDOWN = 1;               // secondes entre deux coups
+// --- Policier (piéton 'police') ---
+// Il poursuit ceux qui ont frappé quelqu'un (comme un combattant poursuit ses cibles), puis leur tire dessus
+export const POLICE_SIGHT = TILE_SIZE * 30;    // repère un criminel jusqu'à cette distance
+export const POLICE_SPEED = PED_SPEED * 2.5;    // vitesse de poursuite (sans criminel en vue, il marche normalement)
+export const POLICE_RANGE = TILE_SIZE * 2.5;   // à cette distance, il s'arrête et tire
+export const SHOT_COOLDOWN = 1.2;              // secondes entre deux tirs
+export const SHOT_POWER = 1;                   // la cible est projetée par la balle (un coup de poing = 1.5)
+export const SHOT_UP = 1.5;
 export const PED_BOUNCE = 0.5;                 // rebond d'un piéton projeté contre un mur (0 à 1)
 
 // --- Eau (3 dans la carte) ---

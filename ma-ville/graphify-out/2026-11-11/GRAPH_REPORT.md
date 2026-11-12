@@ -1,18 +1,18 @@
 # Graph Report - ma-ville  (2026-11-11)
 
 ## Corpus Check
-- 17 files · ~12,025 words
+- 17 files · ~12,787 words
 - Verdict: corpus is large enough that graph structure adds value.
-- Unclassified: 180 file(s) not represented in the graph (top: .glb 178, .graphify-bak 1, (none) 1)
-- WARNING: 180 of 203 files seen (89%) have no supported extractor and are missing from this graph entirely. It may look complete while representing only part of the codebase.
+- Unclassified: 191 file(s) not represented in the graph (top: .glb 189, .graphify-bak 1, (none) 1)
+- WARNING: 191 of 214 files seen (89%) have no supported extractor and are missing from this graph entirely. It may look complete while representing only part of the codebase.
 
 ## Summary
-- 193 nodes · 449 edges · 11 communities (9 shown, 2 thin omitted)
+- 193 nodes · 452 edges · 10 communities (8 shown, 2 thin omitted)
 - Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 9 edges (avg confidence: 0.86)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `d28bd6b8`
+- Built from commit: `f9b5265f`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -23,7 +23,6 @@
 - Config & Vehicle Tuning
 - pedestrians.js
 - Package Manifest
-- updatePedestrians
 - effects.js
 - Texture Atlases
 - CLAUDE.md
@@ -32,13 +31,13 @@
 ## God Nodes (most connected - your core abstractions)
 1. `updateVehicles()` - 15 edges
 2. `canMove()` - 12 edges
-3. `checkCollisions()` - 11 edges
-4. `placeModel()` - 10 edges
+3. `placeModel()` - 12 edges
+4. `checkCollisions()` - 11 edges
 5. `drawRoads()` - 9 edges
 6. `updatePedestrians()` - 9 edges
 7. `isRoad()` - 8 edges
-8. `canDriveTo()` - 8 edges
-9. `isWaterAt()` - 8 edges
+8. `isWaterAt()` - 8 edges
+9. `canDriveTo()` - 8 edges
 10. `chooseNext()` - 8 edges
 
 ## Surprising Connections (you probably didn't know these)
@@ -50,41 +49,37 @@
   public/models/roads/Textures/colormap.png → public/models/cars/Textures/colormap.png
 - `Commercial Colormap Texture Atlas` --semantically_similar_to--> `Suburban Colormap Texture Atlas`  [INFERRED] [semantically similar]
   public/models/commercial/Textures/colormap.png → public/models/suburban/Textures/colormap.png
-- `chooseNext()` --calls--> `canMove()`  [EXTRACTED]
-  src/pedestrians.js → src/map.js
+- `buildCity()` --calls--> `drawRoads()`  [EXTRACTED]
+  src/main.js → src/roads.js
 
 ## Import Cycles
 - None detected.
 
-## Communities (11 total, 2 thin omitted)
+## Communities (10 total, 2 thin omitted)
 
 ### Community 0 - "City Map & Grid Queries"
-Cohesion: 0.16
-Nodes (20): BRIDGE_HEIGHT, blockedCells, canMove(), DIR, DIRECTIONS, edgeHeight(), isBeach(), isFree() (+12 more)
+Cohesion: 0.15
+Nodes (21): BRIDGE_HEIGHT, blockedCells, canMove(), DIR, DIRECTIONS, edgeHeight(), isBeach(), isFree() (+13 more)
 
 ### Community 1 - "App Entry & Render Loop"
 Cohesion: 0.09
-Nodes (29): index.html (Ma petite ville), Fullscreen 3D Canvas Style, Main Module Script Tag, addBuilding(), buildings, placeModel(), DEFAULT_SETTINGS, PACK_SETTINGS (+21 more)
+Nodes (32): index.html (Ma petite ville), Fullscreen 3D Canvas Style, Main Module Script Tag, dependencies, three@^0.187.0, three, addBuilding(), buildings (+24 more)
 
 ### Community 2 - "collisions.js"
 Cohesion: 0.16
-Nodes (21): bounceOffWall(), hitBuildings(), carCircles(), checkCollisions(), hitCars(), hitWallCar(), sameLevel(), BODY_RADIUS (+13 more)
+Nodes (20): bounceOffWall(), hitBuildings(), carCircles(), checkCollisions(), hitCars(), hitWallCar(), sameLevel(), BODY_RADIUS (+12 more)
 
 ### Community 3 - "Config & Vehicle Tuning"
-Cohesion: 0.11
-Nodes (30): CRASH_DURATION, CRASH_IMMUNITY, DRIVING_STYLES, FIRE_DAMAGE, FLAME_RATE, OVERTAKE_CELLS, OVERTAKE_MARGIN, RING_RADIUS (+22 more)
+Cohesion: 0.09
+Nodes (43): BUMP_ROLL, BUMP_SHOVE, BUMP_SWERVE, BUMP_UP, CRASH_DURATION, CRASH_IMMUNITY, CROC_DRAG_SPEED, CROC_MOUTH (+35 more)
 
 ### Community 4 - "pedestrians.js"
-Cohesion: 0.09
-Nodes (32): BUMP_ROLL, BUMP_SHOVE, BUMP_SWERVE, BUMP_UP, CROC_DRAG_SPEED, CROC_MOUTH, CROC_SWIM_BOOST, CROC_SWIM_DEPTH (+24 more)
+Cohesion: 0.10
+Nodes (31): CROC_SWIM_BOOST, CROC_SWIM_DEPTH, DROWN_DEPTH, DROWN_TIME, FIGHTER_CHARGE, FIGHTER_SIGHT, FIGHTER_SPEED, FLOAT_BOB (+23 more)
 
 ### Community 5 - "Package Manifest"
-Cohesion: 0.13
-Nodes (15): dependencies, three@^0.187.0, devDependencies, vite@^8.3.6, name, private, scripts, build (+7 more)
-
-### Community 6 - "updatePedestrians"
-Cohesion: 0.30
-Nodes (12): isWater(), isWaterAt(), charge(), chooseNext(), dragVictim(), findPrey(), floorY(), grab() (+4 more)
+Cohesion: 0.15
+Nodes (12): devDependencies, vite@^8.3.6, name, private, scripts, build, dev, preview (+4 more)
 
 ### Community 7 - "effects.js"
 Cohesion: 0.24
@@ -102,15 +97,13 @@ Nodes (5): Cars Colormap Texture Atlas, Characters Colormap Texture Atlas, Comme
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `three` connect `Package Manifest` to `App Entry & Render Loop`, `Config & Vehicle Tuning`, `effects.js`?**
+- **Why does `three` connect `App Entry & Render Loop` to `Config & Vehicle Tuning`, `Package Manifest`, `effects.js`?**
   _High betweenness centrality (0.154) - this node is a cross-community bridge._
 - **What connects `Main Module Script Tag`, `Characters Colormap Texture Atlas`, `Roads Colormap Texture Atlas` to the rest of the system?**
   _4 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `App Entry & Render Loop` be split into smaller, more focused modules?**
-  _Cohesion score 0.09090909090909091 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.09309309309309309 - nodes in this community are weakly interconnected._
 - **Should `Config & Vehicle Tuning` be split into smaller, more focused modules?**
-  _Cohesion score 0.11397849462365592 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.0898989898989899 - nodes in this community are weakly interconnected._
 - **Should `pedestrians.js` be split into smaller, more focused modules?**
-  _Cohesion score 0.0944741532976827 - nodes in this community are weakly interconnected._
-- **Should `Package Manifest` be split into smaller, more focused modules?**
-  _Cohesion score 0.1323529411764706 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.10483870967741936 - nodes in this community are weakly interconnected._
