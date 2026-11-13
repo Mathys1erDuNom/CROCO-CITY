@@ -1,8 +1,8 @@
 {
+  "0": "canMove",
   "2": "collisions.js",
-  "3": "map.js",
   "4": "config.js",
-  "6": "updatePedestrians",
+  "6": "buildings.js",
   "7": "effects.js",
   "9": "CLAUDE.md",
   "10": ".claude/CLAUDE.md",

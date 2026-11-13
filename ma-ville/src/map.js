@@ -1,25 +1,15 @@
 import { TILE_SIZE, BRIDGE_HEIGHT } from './config.js';
+import map1 from './maps/map1.js';
+import map2 from './maps/map2.js';
 
-// La carte de la ville : 0 = herbe, 1 = route, 2 = pont (route en hauteur), 3 = eau, 4 = plage.
-// Une route (1) collée au bout d'un pont, dans son axe, devient toute seule une rampe.
-// Chaque ligne du tableau est une ligne de la grille (row),
-// chaque chiffre est une colonne (col).
-export const MAP = [
-  [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-  [0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-  [0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-  [0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-  [0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0],
-  [0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0],
-  [0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0],
-  [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0],
-  [4, 4, 4, 4, 4, 4, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0],
-  [3, 3, 3, 3, 3, 4, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0],
-  [3, 3, 3, 3, 3, 4, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0],
-  [3, 3, 3, 3, 3, 4, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0],
-  [3, 3, 3, 3, 3, 4, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0],
-];
+// Les cartes disponibles : pour en ajouter une, créer maps/map3.js (la grille) et maps/city3.js (ce qu'on pose dessus),
+// puis les ajouter ici et dans CITIES (main.js). Le bouton "Carte" passe de l'une à l'autre.
+const GRIDS = [map1, map2];
+// La carte affichée vient de l'adresse de la page : ?map=2 (rien ou numéro inconnu = carte 1)
+const asked = Number(new URLSearchParams(globalThis.location?.search).get('map')) - 1;
+export const MAP_INDEX = GRIDS[asked] ? asked : 0;
+export const MAP_COUNT = GRIDS.length;
+export const MAP = GRIDS[MAP_INDEX];
 
 export const ROWS = MAP.length;
 export const COLS = MAP[0].length;
